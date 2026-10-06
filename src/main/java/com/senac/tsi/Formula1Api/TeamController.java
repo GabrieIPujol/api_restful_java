@@ -28,10 +28,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
+// endpoints das equipes, segue o mesmo molde do DriverController
 @RestController
 @Tag(name = "Teams", description = "Gerenciamento das equipes (construtores) de Formula 1")
 public class TeamController {
 
+    // exemplo que aparece no Swagger
     private static final String TEAM_EXAMPLE = """
             { "name": "McLaren", "country": "United Kingdom", "base": "Woking", "foundedYear": 1963,
               "constructorTitles": 10, "sponsors": [ { "id": 1 } ] }""";
@@ -42,6 +44,7 @@ public class TeamController {
     private final PagedResourcesAssembler<Team> pagedResourcesAssembler;
     private final PagedResourcesAssembler<Standing> standingsAssembler;
 
+    // injecao de dependencia pelo construtor
     public TeamController(TeamRepository repository,
                           SponsorRepository sponsorRepository,
                           TeamModelAssembler assembler,
@@ -54,6 +57,7 @@ public class TeamController {
         this.standingsAssembler = standingsAssembler;
     }
 
+    // GET /teams - lista paginada
     @Operation(summary = "Get all teams", description = "Lista paginada de todas as equipes")
     @ApiResponse(responseCode = "200", description = "Returned a paginated list of teams")
     @GetMapping("/teams")
@@ -63,6 +67,7 @@ public class TeamController {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(teamPage, assembler));
     }
 
+    // GET /teams/{id} - 404 se nao achar
     @Operation(summary = "Get a team by its id")
     @ApiResponse(responseCode = "200", description = "Returns a valid team",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = Team.class)))
@@ -75,6 +80,7 @@ public class TeamController {
         return assembler.toModel(team);
     }
 
+    // POST /teams - cria a equipe ja com os patrocinadores
     @Operation(summary = "Creates a new team", description = "Os patrocinadores sao vinculados pelo id (Many-to-Many)")
     @ApiResponse(responseCode = "201", description = "Team created; Location header points to the new resource")
     @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
@@ -90,6 +96,7 @@ public class TeamController {
                             examples = @ExampleObject(value = TEAM_EXAMPLE)))
             @RequestBody @Valid Team newTeam) {
 
+        // os patrocinadores chegam so com id, aqui busca os de verdade
         newTeam.setSponsors(resolveSponsors(newTeam.getSponsors()));
         EntityModel<Team> entityModel = assembler.toModel(repository.save(newTeam));
 
@@ -98,6 +105,7 @@ public class TeamController {
                 .toUri()).body(entityModel);
     }
 
+    // PUT /teams/{id} - substitui tudo, inclusive a lista de patrocinadores
     @Operation(summary = "Updates a team", description = "Substitui todos os dados da equipe, inclusive a lista de patrocinadores")
     @ApiResponse(responseCode = "200", description = "Team updated",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = Team.class)))
@@ -129,6 +137,7 @@ public class TeamController {
         return ResponseEntity.ok(assembler.toModel(updated));
     }
 
+    // DELETE /teams/{id}
     @Operation(summary = "Deletes a team", description = "So e possivel excluir equipes sem pilotos e sem chefe de equipe vinculados")
     @ApiResponse(responseCode = "204", description = "Successfully deleted a team", content = @Content)
     @ApiResponse(responseCode = "404", description = "Team not found, maybe it's already deleted", content = @Content)
@@ -139,13 +148,16 @@ public class TeamController {
         if (team.isEmpty())
             return ResponseEntity.notFound().build();
 
+        // se ainda tem piloto ou chefe nao deixa apagar
         if (!team.get().getDrivers().isEmpty() || team.get().getPrincipal() != null)
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Team still has drivers or a principal");
 
+        // os vinculos com patrocinador saem junto porque a equipe e a dona
         repository.delete(team.get());
         return ResponseEntity.noContent().build();
     }
 
+    // GET /teams/search?country= - equipes de um pais
     @Operation(summary = "Search teams by country", description = "Consulta personalizada: equipes de um pais (sem diferenciar maiusculas)")
     @ApiResponse(responseCode = "200", description = "Returned a paginated list of teams from the country")
     @GetMapping("/teams/search")
@@ -156,6 +168,7 @@ public class TeamController {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(teamPage, assembler));
     }
 
+    // GET /teams/sponsor/{sponsorId} - equipes de um patrocinador
     @Operation(summary = "Get teams of a sponsor", description = "Consulta personalizada: equipes patrocinadas por um patrocinador (Many-to-Many)")
     @ApiResponse(responseCode = "200", description = "Returned a paginated list of teams of the sponsor")
     @ApiResponse(responseCode = "404", description = "Sponsor not found", content = @Content)
@@ -170,13 +183,13 @@ public class TeamController {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(teamPage, assembler));
     }
 
+    // GET /teams/standings - tabela de construtores, mesma logica da de pilotos
     @Operation(summary = "Constructors' championship standings",
             description = "Consulta personalizada: tabela do campeonato de construtores, somando os pontos dos resultados de todos os pilotos da equipe, ordenada por pontos")
     @ApiResponse(responseCode = "200", description = "Returned the paginated standings table")
     @GetMapping("/teams/standings")
     public ResponseEntity<PagedModel<EntityModel<Standing>>> getConstructorStandings(
             @ParameterObject @PageableDefault(size = 10, page = 0) Pageable pageable) {
-        // A ordenacao e fixa (pontos desc), por isso o sort do cliente e ignorado
         Page<Standing> page = repository.findConstructorStandings(PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()));
         AtomicLong position = new AtomicLong(page.getPageable().getOffset());
         Page<Standing> ranked = page.map(standing -> standing.withPosition(position.incrementAndGet()));
@@ -185,7 +198,7 @@ public class TeamController {
                 linkTo(methodOn(TeamController.class).getTeamById(standing.id())).withRel("team"))));
     }
 
-    // Troca os sponsors recebidos (so com id) pelas entidades do banco
+    // troca cada patrocinador que veio so com id pelo do banco (404 se algum nao existir)
     private Set<Sponsor> resolveSponsors(Set<Sponsor> sponsors) {
         Set<Sponsor> resolved = new HashSet<>();
         if (sponsors == null)

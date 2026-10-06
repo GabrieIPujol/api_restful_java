@@ -7,9 +7,11 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
+// coloca os links do HATEOAS no patrocinador
 @Component
 class SponsorModelAssembler implements RepresentationModelAssembler<Sponsor, EntityModel<Sponsor>> {
 
+    // o link "teams" entra no lugar da lista de equipes que tem @JsonIgnore
     @Override
     public EntityModel<Sponsor> toModel(Sponsor sponsor) {
         return EntityModel.of(sponsor,

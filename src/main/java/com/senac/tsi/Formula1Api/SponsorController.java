@@ -20,10 +20,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+// endpoints dos patrocinadores, o mais simples de todos porque nao aponta pra ninguem
+// pra ligar um patrocinador numa equipe usa o campo sponsors no POST/PUT de /teams
 @RestController
 @Tag(name = "Sponsors", description = "Gerenciamento dos patrocinadores (Many-to-Many com Team)")
 public class SponsorController {
 
+    // exemplo que aparece no Swagger
     private static final String SPONSOR_EXAMPLE = """
             { "name": "Shell", "industry": "Energy" }""";
 
@@ -31,6 +34,7 @@ public class SponsorController {
     private final SponsorModelAssembler assembler;
     private final PagedResourcesAssembler<Sponsor> pagedResourcesAssembler;
 
+    // injecao de dependencia pelo construtor
     public SponsorController(SponsorRepository repository,
                              SponsorModelAssembler assembler,
                              PagedResourcesAssembler<Sponsor> pagedResourcesAssembler) {
@@ -39,6 +43,7 @@ public class SponsorController {
         this.pagedResourcesAssembler = pagedResourcesAssembler;
     }
 
+    // GET /sponsors - lista paginada
     @Operation(summary = "Get all sponsors", description = "Lista paginada de todos os patrocinadores")
     @ApiResponse(responseCode = "200", description = "Returned a paginated list of sponsors")
     @GetMapping("/sponsors")
@@ -48,6 +53,7 @@ public class SponsorController {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(sponsorPage, assembler));
     }
 
+    // GET /sponsors/{id} - 404 se nao achar
     @Operation(summary = "Get a sponsor by its id")
     @ApiResponse(responseCode = "200", description = "Returns a valid sponsor",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = Sponsor.class)))
@@ -60,6 +66,7 @@ public class SponsorController {
         return assembler.toModel(sponsor);
     }
 
+    // POST /sponsors - aqui nao tem nada pra buscar antes, e so salvar
     @Operation(summary = "Creates a new sponsor", description = "Para vincular a uma equipe, use o campo sponsors no POST/PUT de /teams")
     @ApiResponse(responseCode = "201", description = "Sponsor created; Location header points to the new resource")
     @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
@@ -81,6 +88,7 @@ public class SponsorController {
                 .toUri()).body(entityModel);
     }
 
+    // PUT /sponsors/{id}
     @Operation(summary = "Updates a sponsor")
     @ApiResponse(responseCode = "200", description = "Sponsor updated",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = Sponsor.class)))
@@ -109,6 +117,7 @@ public class SponsorController {
         return ResponseEntity.ok(assembler.toModel(updated));
     }
 
+    // DELETE /sponsors/{id} - o @Transactional faz tudo ser gravado junto
     @Operation(summary = "Deletes a sponsor", description = "Tambem remove o vinculo do patrocinador com as equipes")
     @ApiResponse(responseCode = "204", description = "Successfully deleted a sponsor", content = @Content)
     @ApiResponse(responseCode = "404", description = "Sponsor not found, maybe it's already deleted", content = @Content)
@@ -119,12 +128,13 @@ public class SponsorController {
         if (sponsor.isEmpty())
             return ResponseEntity.notFound().build();
 
-        // Team e o dono do Many-to-Many, entao o vinculo e removido pelo lado da equipe
+        // primeiro tira o patrocinador de cada equipe (a equipe e a dona do vinculo), depois apaga
         sponsor.get().getTeams().forEach(team -> team.getSponsors().remove(sponsor.get()));
         repository.delete(sponsor.get());
         return ResponseEntity.noContent().build();
     }
 
+    // GET /sponsors/search?industry= - patrocinadores de um setor
     @Operation(summary = "Search sponsors by industry", description = "Consulta personalizada: patrocinadores de um setor (sem diferenciar maiusculas)")
     @ApiResponse(responseCode = "200", description = "Returned a paginated list of sponsors")
     @GetMapping("/sponsors/search")

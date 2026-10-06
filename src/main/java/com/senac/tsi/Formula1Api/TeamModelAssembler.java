@@ -7,9 +7,11 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
+// coloca os links do HATEOAS na equipe
 @Component
 class TeamModelAssembler implements RepresentationModelAssembler<Team, EntityModel<Team>> {
 
+    // "drivers" e "principal" entram no lugar dos campos que tem @JsonIgnore
     @Override
     public EntityModel<Team> toModel(Team team) {
         return EntityModel.of(team,
@@ -18,7 +20,6 @@ class TeamModelAssembler implements RepresentationModelAssembler<Team, EntityMod
                 linkTo(methodOn(TeamController.class).deleteTeam(team.getId())).withRel("delete"),
                 linkTo(methodOn(DriverController.class).getDriversByTeam(team.getId(), Pageable.unpaged())).withRel("drivers"),
                 linkTo(methodOn(TeamPrincipalController.class).getPrincipalByTeam(team.getId())).withRel("principal"),
-                // Use Pageable.unpaged() em vez de null
                 linkTo(methodOn(TeamController.class).getAllTeams(Pageable.unpaged())).withRel("teams")
         );
     }

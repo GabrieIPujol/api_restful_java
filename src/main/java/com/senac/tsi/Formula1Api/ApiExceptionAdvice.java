@@ -11,10 +11,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+// trata os erros de todos os controllers num lugar so
+// quando um controller lanca uma exception, o Spring cai no metodo certo daqui
 @RestControllerAdvice
 public class ApiExceptionAdvice {
 
-    // 404 - recurso nao encontrado
+    // 404 - qualquer um dos NotFoundException, devolve a mensagem da exception
     @ExceptionHandler({TeamNotFoundException.class, TeamPrincipalNotFoundException.class,
             DriverNotFoundException.class, SponsorNotFoundException.class, RaceResultNotFoundException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
@@ -22,7 +24,7 @@ public class ApiExceptionAdvice {
         return ex.getMessage();
     }
 
-    // 400 - payload nao passou nas validacoes (Bean Validation)
+    // 400 - o JSON nao passou nas validacoes, devolve cada campo com o erro dele
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     Map<String, String> validationHandler(MethodArgumentNotValidException ex) {
@@ -32,14 +34,14 @@ public class ApiExceptionAdvice {
         return errors;
     }
 
-    // 400 - JSON mal formatado ou valor de enum invalido
+    // 400 - JSON quebrado ou valor que nao existe no enum
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     String unreadableHandler(HttpMessageNotReadableException ex) {
         return "Malformed request body";
     }
 
-    // 409 - violacao de unicidade ou exclusao de registro ainda referenciado
+    // 409 - o banco barrou: valor repetido num campo unique ou registro que ainda ta sendo usado
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     String conflictHandler(DataIntegrityViolationException ex) {

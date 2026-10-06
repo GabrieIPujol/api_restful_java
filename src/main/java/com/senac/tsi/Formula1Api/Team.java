@@ -10,12 +10,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+// essa classe vira a tabela TEAM no banco, cada equipe e uma linha
 @Entity
 @Schema(description = "Equipe (construtor) de Formula 1")
 public class Team {
+    // id gerado pelo banco, por isso nao precisa mandar no POST
     private @Id
     @GeneratedValue long id;
 
+    // validacoes rodam no @Valid (400 se falhar), o unique e do banco (nome repetido da 409)
     @NotBlank
     @Size(min = 2, max = 100)
     @Column(unique = true)
@@ -27,6 +30,7 @@ public class Team {
     @Schema(example = "United Kingdom")
     private String country;
 
+    // esse e opcional, so tem limite de tamanho
     @Size(max = 100)
     @Schema(example = "Woking")
     private String base;
@@ -42,27 +46,29 @@ public class Team {
     @Schema(description = "Titulos mundiais de construtores", example = "10")
     private Integer constructorTitles;
 
-    // Many-to-Many: uma equipe tem varios patrocinadores e um patrocinador pode patrocinar varias equipes
-    // No payload basta enviar os ids: "sponsors": [{ "id": 1 }]
+    // many-to-many com patrocinador, a equipe e a dona e cria a tabela TEAM_SPONSOR
+    // usei Set pra nao repetir patrocinador, no JSON manda so os ids: "sponsors": [ { "id": 1 } ]
     @ManyToMany
     @JoinTable(name = "team_sponsor",
             joinColumns = @JoinColumn(name = "team_id"),
             inverseJoinColumns = @JoinColumn(name = "sponsor_id"))
     private Set<Sponsor> sponsors = new HashSet<>();
 
-    // One-to-Many: lado inverso, navegavel pelo link "drivers"
+    // uma equipe tem varios pilotos, @JsonIgnore pra nao dar loop (vai o link "drivers")
     @JsonIgnore
     @OneToMany(mappedBy = "team")
     private List<Driver> drivers;
 
-    // One-to-One: lado inverso, navegavel pelo link "principal"
+    // one-to-one com o chefe, quem guarda a coluna e o TeamPrincipal (vai o link "principal")
     @JsonIgnore
     @OneToOne(mappedBy = "team")
     private TeamPrincipal principal;
 
+    // construtor vazio e obrigatorio pro JPA e pro Jackson
     public Team() {
     }
 
+    // usado no LoadDatabase
     public Team(String name, String country, String base, Integer foundedYear, Integer constructorTitles) {
         this.name = name;
         this.country = country;
@@ -71,6 +77,7 @@ public class Team {
         this.constructorTitles = constructorTitles;
     }
 
+    // getters e setters, o Jackson usa pra montar e ler o JSON
     public long getId() {
         return id;
     }
@@ -143,6 +150,7 @@ public class Team {
         this.principal = principal;
     }
 
+    // relacionamentos ficam fora daqui pra nao dar loop
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

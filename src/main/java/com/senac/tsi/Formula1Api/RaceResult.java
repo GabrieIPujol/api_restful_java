@@ -7,12 +7,16 @@ import jakarta.validation.constraints.*;
 import java.time.LocalDate;
 import java.util.Objects;
 
+// essa classe vira a tabela RACE_RESULT, cada linha e o resultado de um piloto numa corrida
+// a pontuacao da tabela de classificacao sai da soma dessas linhas
 @Entity
 @Schema(description = "Resultado de um piloto em um Grande Premio")
 public class RaceResult {
+    // id gerado pelo banco
     private @Id
     @GeneratedValue long id;
 
+    // validacoes rodam no @Valid, se falhar volta 400
     @NotBlank
     @Size(min = 3, max = 100)
     @Schema(example = "Australian Grand Prix")
@@ -33,27 +37,31 @@ public class RaceResult {
     @Schema(description = "Posicao final na corrida", example = "1")
     private Integer position;
 
+    // no maximo 26: 25 da vitoria mais 1 da volta mais rapida
     @NotNull
     @PositiveOrZero
     @Max(26)
     @Schema(description = "Pontos conquistados (25 para o vencedor, +1 volta mais rapida)", example = "25")
     private Integer points;
 
+    // o enum do requisito, o STRING grava o nome ("FINISHED") no banco em vez do numero da posicao
     @NotNull
     @Enumerated(EnumType.STRING)
     @Schema(example = "FINISHED")
     private ResultStatus status;
 
-    // Many-to-One: um piloto tem varios resultados
-    // No payload basta enviar o id: "driver": { "id": 1 }
+    // varios resultados pra um piloto, o resultado guarda a coluna driver_id
+    // no JSON so precisa mandar o id: "driver": { "id": 1 }
     @NotNull
     @ManyToOne
     @JoinColumn(name = "driver_id")
     private Driver driver;
 
+    // construtor vazio e obrigatorio pro JPA e pro Jackson
     public RaceResult() {
     }
 
+    // usado no LoadDatabase
     public RaceResult(String raceName, String circuit, LocalDate raceDate, Integer position, Integer points, ResultStatus status, Driver driver) {
         this.raceName = raceName;
         this.circuit = circuit;
@@ -64,6 +72,7 @@ public class RaceResult {
         this.driver = driver;
     }
 
+    // getters e setters, o Jackson usa pra montar e ler o JSON
     public long getId() {
         return id;
     }
@@ -128,6 +137,7 @@ public class RaceResult {
         this.driver = driver;
     }
 
+    // o piloto fica de fora daqui pra nao dar loop
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

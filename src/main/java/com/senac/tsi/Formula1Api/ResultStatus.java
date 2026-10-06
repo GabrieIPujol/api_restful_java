@@ -1,7 +1,11 @@
 package com.senac.tsi.Formula1Api;
 
+// o enum do requisito, sao os unicos status que um resultado pode ter
 public enum ResultStatus {
-    FINISHED,   // terminou a corrida
-    DNF,        // Did Not Finish - abandonou
-    DSQ         // desclassificado
+    // terminou a corrida
+    FINISHED,
+    // abandonou (did not finish)
+    DNF,
+    // desclassificado
+    DSQ
 }

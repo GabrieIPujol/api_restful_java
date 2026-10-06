@@ -6,12 +6,15 @@ import jakarta.validation.constraints.*;
 
 import java.util.Objects;
 
+// essa classe vira a tabela TEAM_PRINCIPAL, que guarda os chefes de equipe
 @Entity
 @Schema(description = "Chefe de equipe (Team Principal)")
 public class TeamPrincipal {
+    // id gerado pelo banco
     private @Id
     @GeneratedValue long id;
 
+    // validacoes rodam no @Valid, se falhar volta 400
     @NotBlank
     @Size(min = 3, max = 100)
     @Schema(example = "Andrea Stella")
@@ -28,15 +31,17 @@ public class TeamPrincipal {
     @Schema(description = "Ano em que assumiu a equipe", example = "2023")
     private Integer since;
 
-    // One-to-One: cada equipe tem um unico chefe (unique garante isso no banco)
-    // No payload basta enviar o id: "team": { "id": 1 }
+    // one-to-one: o chefe guarda a coluna team_id, e o unique impede dois chefes na mesma equipe (409)
+    // nao tem @NotNull porque o chefe pode ficar sem equipe
     @OneToOne
     @JoinColumn(name = "team_id", unique = true)
     private Team team;
 
+    // construtor vazio e obrigatorio pro JPA e pro Jackson
     public TeamPrincipal() {
     }
 
+    // usado no LoadDatabase
     public TeamPrincipal(String name, String nationality, Integer since, Team team) {
         this.name = name;
         this.nationality = nationality;
@@ -44,6 +49,7 @@ public class TeamPrincipal {
         this.team = team;
     }
 
+    // getters e setters, o Jackson usa pra montar e ler o JSON
     public long getId() {
         return id;
     }
@@ -84,6 +90,7 @@ public class TeamPrincipal {
         this.team = team;
     }
 
+    // a equipe fica de fora daqui pra nao dar loop
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

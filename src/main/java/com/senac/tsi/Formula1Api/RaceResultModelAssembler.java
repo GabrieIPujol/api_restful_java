@@ -7,6 +7,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
+// coloca os links do HATEOAS no resultado, incluindo o link pro piloto
 @Component
 class RaceResultModelAssembler implements RepresentationModelAssembler<RaceResult, EntityModel<RaceResult>> {
 

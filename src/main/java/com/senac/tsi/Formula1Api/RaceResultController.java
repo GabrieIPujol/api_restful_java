@@ -19,10 +19,13 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+// endpoints dos resultados, mesmo molde do DriverController
+// qualquer mudanca aqui ja muda as tabelas de classificacao
 @RestController
 @Tag(name = "Race Results", description = "Gerenciamento dos resultados de corrida, base para a pontuacao e as tabelas de classificacao")
 public class RaceResultController {
 
+    // exemplo que aparece no Swagger
     private static final String RESULT_EXAMPLE = """
             { "raceName": "Australian Grand Prix", "circuit": "Albert Park", "raceDate": "2026-03-08",
               "position": 1, "points": 25, "status": "FINISHED", "driver": { "id": 1 } }""";
@@ -32,6 +35,7 @@ public class RaceResultController {
     private final RaceResultModelAssembler assembler;
     private final PagedResourcesAssembler<RaceResult> pagedResourcesAssembler;
 
+    // injecao de dependencia pelo construtor
     public RaceResultController(RaceResultRepository repository,
                                 DriverRepository driverRepository,
                                 RaceResultModelAssembler assembler,
@@ -42,6 +46,7 @@ public class RaceResultController {
         this.pagedResourcesAssembler = pagedResourcesAssembler;
     }
 
+    // GET /results - lista paginada
     @Operation(summary = "Get all race results", description = "Lista paginada de todos os resultados")
     @ApiResponse(responseCode = "200", description = "Returned a paginated list of race results")
     @GetMapping("/results")
@@ -51,6 +56,7 @@ public class RaceResultController {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(resultPage, assembler));
     }
 
+    // GET /results/{id} - 404 se nao achar
     @Operation(summary = "Get a race result by its id")
     @ApiResponse(responseCode = "200", description = "Returns a valid race result",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = RaceResult.class)))
@@ -63,6 +69,7 @@ public class RaceResultController {
         return assembler.toModel(result);
     }
 
+    // POST /results - registra uma corrida e os pontos ja entram na tabela
     @Operation(summary = "Creates a new race result", description = "O piloto e vinculado pelo id; os pontos entram nas tabelas de classificacao")
     @ApiResponse(responseCode = "201", description = "Race result created; Location header points to the new resource")
     @ApiResponse(responseCode = "400", description = "Bad request on the payload (ex.: status fora de FINISHED, DNF, DSQ)", content = @Content)
@@ -77,6 +84,7 @@ public class RaceResultController {
                             examples = @ExampleObject(value = RESULT_EXAMPLE)))
             @RequestBody @Valid RaceResult newResult) {
 
+        // troca o piloto que veio so com id pelo piloto de verdade
         newResult.setDriver(resolveDriver(newResult.getDriver()));
         EntityModel<RaceResult> entityModel = assembler.toModel(repository.save(newResult));
 
@@ -85,6 +93,7 @@ public class RaceResultController {
                 .toUri()).body(entityModel);
     }
 
+    // PUT /results/{id} - da pra usar pra corrigir os pontos de uma corrida
     @Operation(summary = "Updates a race result")
     @ApiResponse(responseCode = "200", description = "Race result updated",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = RaceResult.class)))
@@ -117,6 +126,7 @@ public class RaceResultController {
         return ResponseEntity.ok(assembler.toModel(updated));
     }
 
+    // DELETE /results/{id} - ninguem depende de resultado, entao nao tem 409 aqui
     @Operation(summary = "Deletes a race result")
     @ApiResponse(responseCode = "204", description = "Successfully deleted a race result", content = @Content)
     @ApiResponse(responseCode = "404", description = "Race result not found, maybe it's already deleted", content = @Content)
@@ -129,6 +139,7 @@ public class RaceResultController {
         return ResponseEntity.noContent().build();
     }
 
+    // GET /results/status/{status} - filtra pelo enum, valor invalido volta 400
     @Operation(summary = "Get race results by status", description = "Consulta personalizada: resultados filtrados pelo enum ResultStatus (ex.: todos os abandonos - DNF)")
     @ApiResponse(responseCode = "200", description = "Returned a paginated list of race results")
     @ApiResponse(responseCode = "400", description = "Invalid status", content = @Content)
@@ -140,6 +151,7 @@ public class RaceResultController {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(resultPage, assembler));
     }
 
+    // GET /results/search?race= - resultados de um GP, ordenados pela posicao
     @Operation(summary = "Search race results by race name", description = "Consulta personalizada: resultados de um Grande Premio, ordenados pela posicao")
     @ApiResponse(responseCode = "200", description = "Returned a paginated list of race results")
     @GetMapping("/results/search")
@@ -150,6 +162,7 @@ public class RaceResultController {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(resultPage, assembler));
     }
 
+    // GET /results/driver/{driverId} - historico do piloto, ordenado pela data
     @Operation(summary = "Get race results of a driver", description = "Consulta personalizada: historico de resultados de um piloto")
     @ApiResponse(responseCode = "200", description = "Returned a paginated list of race results of the driver")
     @ApiResponse(responseCode = "404", description = "Driver not found", content = @Content)
@@ -164,7 +177,7 @@ public class RaceResultController {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(resultPage, assembler));
     }
 
-    // Troca o piloto recebido (so com id) pela entidade do banco
+    // busca o piloto de verdade no banco (404 se nao existir)
     private Driver resolveDriver(Driver driver) {
         return driverRepository.findById(driver.getId())
                 .orElseThrow(() -> new DriverNotFoundException(driver.getId()));

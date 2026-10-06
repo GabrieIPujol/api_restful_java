@@ -7,6 +7,7 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
+// coloca os links do HATEOAS no chefe de equipe
 @Component
 class TeamPrincipalModelAssembler implements RepresentationModelAssembler<TeamPrincipal, EntityModel<TeamPrincipal>> {
 
@@ -18,6 +19,7 @@ class TeamPrincipalModelAssembler implements RepresentationModelAssembler<TeamPr
                 linkTo(methodOn(TeamPrincipalController.class).deletePrincipal(principal.getId())).withRel("delete"),
                 linkTo(methodOn(TeamPrincipalController.class).getAllPrincipals(Pageable.unpaged())).withRel("principals")
         );
+        // o link da equipe so entra se o chefe tiver uma
         if (principal.getTeam() != null)
             model.add(linkTo(methodOn(TeamController.class).getTeamById(principal.getTeam().getId())).withRel("team"));
         return model;

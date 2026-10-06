@@ -7,9 +7,12 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelAssembler;
 import org.springframework.stereotype.Component;
 
+// coloca os links do HATEOAS no piloto (o "_links" do JSON)
 @Component
 class DriverModelAssembler implements RepresentationModelAssembler<Driver, EntityModel<Driver>> {
 
+    // o linkTo(methodOn(...)) monta a URL olhando o mapeamento do controller,
+    // entao se o caminho mudar la os links acompanham
     @Override
     public EntityModel<Driver> toModel(Driver driver) {
         return EntityModel.of(driver,

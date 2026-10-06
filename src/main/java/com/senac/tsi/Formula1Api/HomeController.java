@@ -11,11 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
+// porta de entrada da API, daqui da pra navegar por tudo seguindo os links
 @RestController
 @Tag(name = "Home", description = "Ponto de entrada da API")
 public class HomeController {
 
-    // Raiz navegavel: links para todas as colecoes da API
+    // GET / - nao devolve dado nenhum, so os links pras listas e pras tabelas
     @Operation(summary = "API entry point", description = "Retorna links HATEOAS para todos os recursos")
     @ApiResponse(responseCode = "200", description = "Links to every resource collection")
     @GetMapping("/")

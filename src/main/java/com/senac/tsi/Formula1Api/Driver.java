@@ -9,17 +9,22 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
+// essa classe vira a tabela DRIVER no banco, cada piloto e uma linha
 @Entity
 @Schema(description = "Piloto de Formula 1")
 public class Driver {
+    // id gerado pelo banco, por isso nao precisa mandar no POST
     private @Id
     @GeneratedValue long id;
 
+    // as validacoes rodam no @Valid do controller, se falhar volta 400
     @NotBlank
     @Size(min = 3, max = 100)
     @Schema(example = "Lando Norris")
     private String name;
 
+    // usei Integer em vez de int pra conseguir pegar o campo vazio com @NotNull
+    // o unique e regra do banco, numero repetido volta 409
     @NotNull
     @Min(1)
     @Max(99)
@@ -32,6 +37,7 @@ public class Driver {
     @Schema(example = "British")
     private String nationality;
 
+    // @Past garante que a data ta no passado
     @NotNull
     @Past
     @Schema(example = "1999-11-13")
@@ -42,21 +48,24 @@ public class Driver {
     @Schema(description = "Titulos mundiais de pilotos", example = "1")
     private Integer worldTitles;
 
-    // Many-to-One (lado dono do One-to-Many de Team)
-    // No payload basta enviar o id: "team": { "id": 1 }
+    // varios pilotos pra uma equipe, o piloto e o dono e guarda a coluna team_id
+    // no JSON so precisa mandar o id: "team": { "id": 1 }
     @NotNull
     @ManyToOne
     @JoinColumn(name = "team_id")
     private Team team;
 
-    // One-to-Many: lado inverso, navegavel pelo link "results"
+    // um piloto tem varios resultados, esse lado so serve pra navegar no java
+    // o @JsonIgnore evita loop infinito no JSON, no lugar vai o link "results"
     @JsonIgnore
     @OneToMany(mappedBy = "driver")
     private List<RaceResult> results;
 
+    // construtor vazio e obrigatorio pro JPA e pro Jackson
     public Driver() {
     }
 
+    // usado no LoadDatabase, sem id porque quem gera e o banco
     public Driver(String name, Integer number, String nationality, LocalDate birthDate, Integer worldTitles, Team team) {
         this.name = name;
         this.number = number;
@@ -66,6 +75,7 @@ public class Driver {
         this.team = team;
     }
 
+    // o Jackson usa os getters pra montar o JSON e os setters pra ler o que chega
     public long getId() {
         return id;
     }
@@ -130,6 +140,7 @@ public class Driver {
         this.results = results;
     }
 
+    // deixei os relacionamentos fora do equals/hashCode/toString pra nao dar loop
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
