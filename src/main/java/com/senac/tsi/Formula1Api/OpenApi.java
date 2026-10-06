@@ -24,7 +24,7 @@ public class OpenApi {
                         .license(new License().name("MIT").url("https://mit-license.org/"))
                         .contact(new Contact().name("TSI")
                                 .url("https://www.senac.com.br")
-                                .email("****@sp.senac.br"))
+                                .email("gabriel.velosa@senacsp.edu.br"))
                 );
     }
 }
