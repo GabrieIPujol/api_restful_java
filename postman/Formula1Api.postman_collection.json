@@ -1673,6 +1673,31 @@
           }
         },
         {
+          "name": "Idempotencia: apaga o Pirelli criado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/sponsors/{{idemSponsorId}}",
+            "description": "Apaga o patrocinador da demonstracao, assim a colecao pode rodar de novo sem dar 409"
+          }
+        },
+        {
           "name": "CORS: origem permitida",
           "event": [
             {

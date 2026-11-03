@@ -7,6 +7,7 @@ Todas as mudanças da Formula 1 API ficam registradas aqui. As versões seguem o
 ### Corrigido
 - Uma chave inválida ou revogada num `GET` agora recebe **401**. Antes ela era ignorada em silêncio: a requisição seguia como visitante, e quem errou a chave achava que estava no plano USER até levar um 429.
 - O rate limit de visitante agora identifica o IP pelo header `CF-Connecting-IP`, que o Cloudflare do Render preenche. Antes ele usava o primeiro valor do `X-Forwarded-For`, que o próprio cliente escreve, e dava para furar o limite mandando um IP falso a cada requisição.
+- A coleção do Postman pode rodar várias vezes seguidas: a demonstração de idempotência agora apaga o patrocinador que cria, em vez de dar 409 na segunda vez.
 
 ### Alterado
 - O Swagger abre direto na v2 e guarda a chave do **Authorize** mesmo depois de recarregar a página.

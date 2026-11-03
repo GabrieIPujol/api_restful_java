@@ -198,7 +198,7 @@ Todos os dados de entrada são validados com Bean Validation. Os erros são trat
 
 ## Coleção do Postman
 
-O arquivo [`postman/Formula1Api.postman_collection.json`](postman/Formula1Api.postman_collection.json) tem 67 requisições, organizadas por recurso, mais uma pasta de demonstrações da parte 2 e uma de erros. Cada requisição tem um teste do status esperado.
+O arquivo [`postman/Formula1Api.postman_collection.json`](postman/Formula1Api.postman_collection.json) tem 68 requisições, organizadas por recurso, mais uma pasta de demonstrações da parte 2 e uma de erros. Cada requisição tem um teste do status esperado.
 
 1. No Postman: **Import** → selecione o arquivo.
 2. Preencha as variáveis da coleção: `userKey` e `adminKey` com as suas chaves (do `.env` ou do Render) e, se for usar o Render, `baseUrl`.
