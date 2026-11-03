@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -17,7 +16,6 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 // endpoints dos chefes de equipe, mesmo molde do DriverController
@@ -25,22 +23,23 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Team Principals", description = "Gerenciamento dos chefes de equipe (relacionamento One-to-One com Team)")
 public class TeamPrincipalController {
 
-    // exemplo que aparece no Swagger
+    // exemplos do Swagger: o POST cria um registro novo e o PUT altera o id 1, que ja existe
+    // (com o mesmo exemplo nos dois, o PUT dava 409 de valor repetido depois do POST)
+    private static final String NEW_PRINCIPAL_EXAMPLE = """
+            { "name": "James Vowles", "nationality": "British", "since": 2023, "team": { "id": 5 } }""";
+
     private static final String PRINCIPAL_EXAMPLE = """
             { "name": "Andrea Stella", "nationality": "Italian", "since": 2023, "team": { "id": 1 } }""";
 
-    private final TeamPrincipalRepository repository;
-    private final TeamRepository teamRepository;
+    private final TeamPrincipalService service;
     private final TeamPrincipalModelAssembler assembler;
     private final PagedResourcesAssembler<TeamPrincipal> pagedResourcesAssembler;
 
     // injecao de dependencia pelo construtor
-    public TeamPrincipalController(TeamPrincipalRepository repository,
-                                   TeamRepository teamRepository,
+    public TeamPrincipalController(TeamPrincipalService service,
                                    TeamPrincipalModelAssembler assembler,
                                    PagedResourcesAssembler<TeamPrincipal> pagedResourcesAssembler) {
-        this.repository = repository;
-        this.teamRepository = teamRepository;
+        this.service = service;
         this.assembler = assembler;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
     }
@@ -51,25 +50,22 @@ public class TeamPrincipalController {
     @GetMapping("/principals")
     public ResponseEntity<PagedModel<EntityModel<TeamPrincipal>>> getAllPrincipals(
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
-        Page<TeamPrincipal> principalPage = repository.findAll(pageable);
-        return ResponseEntity.ok(pagedResourcesAssembler.toModel(principalPage, assembler));
+        return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.findAll(pageable), assembler));
     }
 
     // GET /principals/{id} - 404 se nao achar
-    @Operation(summary = "Get a team principal by its id")
+    @Operation(summary = "Get a team principal by its id", description = "Retorna um chefe de equipe com a equipe e os links HATEOAS")
     @ApiResponse(responseCode = "200", description = "Returns a valid team principal",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = TeamPrincipal.class)))
     @ApiResponse(responseCode = "404", description = "Team principal not found", content = @Content)
     @ApiResponse(responseCode = "400", description = "Invalid id", content = @Content)
     @GetMapping("/principals/{id}")
     public EntityModel<TeamPrincipal> getPrincipalById(@Parameter(description = "Id of the team principal", example = "1") @PathVariable Long id) {
-        TeamPrincipal principal = repository.findById(id)
-                .orElseThrow(() -> new TeamPrincipalNotFoundException(id));
-        return assembler.toModel(principal);
+        return assembler.toModel(service.findById(id));
     }
 
     // POST /principals - se a equipe ja tiver chefe o banco barra e volta 409
-    @Operation(summary = "Creates a new team principal", description = "A equipe e vinculada pelo id; cada equipe so pode ter um chefe (One-to-One)")
+    @Operation(summary = "Creates a new team principal", description = "A equipe e vinculada pelo id; cada equipe so pode ter um chefe (One-to-One). Nos dados iniciais as 4 equipes ja tem chefe, entao crie uma antes no POST /teams (ela vira o id 5)")
     @ApiResponse(responseCode = "201", description = "Team principal created; Location header points to the new resource")
     @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
     @ApiResponse(responseCode = "404", description = "Referenced team not found", content = @Content)
@@ -81,11 +77,10 @@ public class TeamPrincipalController {
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = TeamPrincipal.class),
-                            examples = @ExampleObject(value = PRINCIPAL_EXAMPLE)))
+                            examples = @ExampleObject(value = NEW_PRINCIPAL_EXAMPLE)))
             @RequestBody @Valid TeamPrincipal newPrincipal) {
 
-        newPrincipal.setTeam(resolveTeam(newPrincipal.getTeam()));
-        EntityModel<TeamPrincipal> entityModel = assembler.toModel(repository.save(newPrincipal));
+        EntityModel<TeamPrincipal> entityModel = assembler.toModel(service.create(newPrincipal));
 
         return ResponseEntity.created(entityModel
                 .getRequiredLink(IanaLinkRelations.SELF)
@@ -93,7 +88,7 @@ public class TeamPrincipalController {
     }
 
     // PUT /principals/{id}
-    @Operation(summary = "Updates a team principal")
+    @Operation(summary = "Updates a team principal", description = "Substitui todos os dados do chefe. A equipe e vinculada pelo id e nao pode ter outro chefe")
     @ApiResponse(responseCode = "200", description = "Team principal updated",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = TeamPrincipal.class)))
     @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
@@ -110,34 +105,16 @@ public class TeamPrincipalController {
                             examples = @ExampleObject(value = PRINCIPAL_EXAMPLE)))
             @RequestBody @Valid TeamPrincipal newPrincipal) {
 
-        TeamPrincipal updated = repository.findById(id)
-                .map(principal -> {
-                    principal.setName(newPrincipal.getName());
-                    principal.setNationality(newPrincipal.getNationality());
-                    principal.setSince(newPrincipal.getSince());
-                    principal.setTeam(resolveTeam(newPrincipal.getTeam()));
-                    return repository.save(principal);
-                })
-                .orElseThrow(() -> new TeamPrincipalNotFoundException(id));
-
-        return ResponseEntity.ok(assembler.toModel(updated));
+        return ResponseEntity.ok(assembler.toModel(service.update(id, newPrincipal)));
     }
 
-    // DELETE /principals/{id} - o @Transactional faz tudo ser gravado junto
-    @Operation(summary = "Deletes a team principal")
+    // DELETE /principals/{id} - o vinculo com a equipe e desfeito antes
+    @Operation(summary = "Deletes a team principal", description = "Remove o chefe e desfaz o vinculo com a equipe")
     @ApiResponse(responseCode = "204", description = "Successfully deleted a team principal", content = @Content)
     @ApiResponse(responseCode = "404", description = "Team principal not found, maybe it's already deleted", content = @Content)
-    @Transactional
     @DeleteMapping("/principals/{id}")
-    public ResponseEntity<?> deletePrincipal(@Parameter(description = "Id of the team principal", example = "1") @PathVariable Long id) {
-        var principal = repository.findById(id);
-        if (principal.isEmpty())
-            return ResponseEntity.notFound().build();
-
-        // tira o chefe da equipe antes de apagar, senao o Hibernate reclama (dava 500)
-        if (principal.get().getTeam() != null)
-            principal.get().getTeam().setPrincipal(null);
-        repository.delete(principal.get());
+    public ResponseEntity<Void> deletePrincipal(@Parameter(description = "Id of the team principal (o 5 e o criado no POST de exemplo)", example = "5") @PathVariable Long id) {
+        service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -148,8 +125,7 @@ public class TeamPrincipalController {
     public ResponseEntity<PagedModel<EntityModel<TeamPrincipal>>> getPrincipalsByNationality(
             @Parameter(description = "Nationality", example = "Italian") @RequestParam String nationality,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
-        Page<TeamPrincipal> principalPage = repository.findByNationalityIgnoreCase(nationality, pageable);
-        return ResponseEntity.ok(pagedResourcesAssembler.toModel(principalPage, assembler));
+        return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.searchByNationality(nationality, pageable), assembler));
     }
 
     // GET /principals/team/{teamId} - o chefe de uma equipe, volta um so e nao uma pagina
@@ -160,20 +136,6 @@ public class TeamPrincipalController {
     @GetMapping("/principals/team/{teamId}")
     public ResponseEntity<EntityModel<TeamPrincipal>> getPrincipalByTeam(
             @Parameter(description = "Id of the team", example = "1") @PathVariable Long teamId) {
-        if (!teamRepository.existsById(teamId))
-            throw new TeamNotFoundException(teamId);
-
-        // equipe sem chefe tambem volta 404
-        return repository.findByTeamId(teamId)
-                .map(principal -> ResponseEntity.ok(assembler.toModel(principal)))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // busca a equipe de verdade no banco, aqui aceita null porque o chefe pode ficar sem equipe
-    private Team resolveTeam(Team team) {
-        if (team == null)
-            return null;
-        return teamRepository.findById(team.getId())
-                .orElseThrow(() -> new TeamNotFoundException(team.getId()));
+        return ResponseEntity.ok(assembler.toModel(service.findByTeam(teamId)));
     }
 }

@@ -1,6 +1,9 @@
 package com.senac.tsi.Formula1Api;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.data.domain.Page;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 // uma linha da tabela de classificacao, serve tanto pra piloto quanto pra equipe
 // nao vira tabela no banco, e montada na hora pelas consultas de standings
@@ -12,7 +15,7 @@ public record Standing(
         @Schema(example = "Lando Norris") String name,
         @Schema(description = "Soma dos pontos", example = "43") long points) {
 
-    // usado pelo "select new" das consultas, a posicao comeca em 0 e o controller calcula depois
+    // usado pelo "select new" das consultas, a posicao comeca em 0 e e calculada no rank
     public Standing(Long id, String name, Long points) {
         this(0, id, name, points);
     }
@@ -20,5 +23,11 @@ public record Standing(
     // record nao tem setter, entao devolve uma copia ja com a posicao
     public Standing withPosition(long position) {
         return new Standing(position, id, name, points);
+    }
+
+    // preenche a posicao de cada linha, continuando de onde a pagina anterior parou
+    static Page<Standing> rank(Page<Standing> page) {
+        AtomicLong position = new AtomicLong(page.getPageable().getOffset());
+        return page.map(standing -> standing.withPosition(position.incrementAndGet()));
     }
 }

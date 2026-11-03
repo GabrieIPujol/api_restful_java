@@ -6,4 +6,9 @@ public class TeamPrincipalNotFoundException extends RuntimeException {
     TeamPrincipalNotFoundException(long id) {
         super("Could not find team principal with ID: " + id);
     }
+
+    // usado quando a equipe existe mas nao tem chefe
+    TeamPrincipalNotFoundException(String message) {
+        super(message);
+    }
 }

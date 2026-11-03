@@ -1,0 +1,1924 @@
+{
+  "info": {
+    "_postman_id": "7fb5911c-1ac0-42d7-81af-1c2b1b971637",
+    "name": "Formula 1 API",
+    "description": "Colecao da Formula 1 API (projeto final - Spring Boot).\n\nVariaveis: baseUrl (http://localhost:8080 ou o endereco do Render), userKey e adminKey (preencha com as chaves do seu .env ou do render).\n\nPara rodar a colecao inteira no Runner, coloque um delay de 3000 ms entre as requisicoes ou suba a api com RATE_LIMIT_PER_MINUTE=1000, senao o rate limit de visitante (20 por minuto) barra no meio.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "userKey",
+      "value": ""
+    },
+    {
+      "key": "adminKey",
+      "value": ""
+    },
+    {
+      "key": "teamId",
+      "value": ""
+    },
+    {
+      "key": "principalId",
+      "value": ""
+    },
+    {
+      "key": "driverId",
+      "value": ""
+    },
+    {
+      "key": "driverV2Id",
+      "value": ""
+    },
+    {
+      "key": "sponsorId",
+      "value": ""
+    },
+    {
+      "key": "resultId",
+      "value": ""
+    },
+    {
+      "key": "newKeyId",
+      "value": ""
+    },
+    {
+      "key": "newKey",
+      "value": ""
+    },
+    {
+      "key": "idemKey",
+      "value": ""
+    },
+    {
+      "key": "idemSponsorId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Home",
+      "item": [
+        {
+          "name": "Raiz da API (links para tudo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teams",
+      "item": [
+        {
+          "name": "Listar equipes (paginado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/teams?page=0&size=2&sort=name,asc"
+          }
+        },
+        {
+          "name": "Buscar equipe por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/teams/1"
+          }
+        },
+        {
+          "name": "Criar equipe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"teamId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/teams",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Aston Martin\",\n  \"country\": \"United Kingdom\",\n  \"base\": \"Silverstone\",\n  \"foundedYear\": 2021,\n  \"constructorTitles\": 0,\n  \"sponsors\": [\n    {\n      \"id\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alterar equipe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/teams/{{teamId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Aston Martin\",\n  \"country\": \"United Kingdom\",\n  \"base\": \"Silverstone\",\n  \"foundedYear\": 2021,\n  \"constructorTitles\": 1,\n  \"sponsors\": [\n    {\n      \"id\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Equipes de um pais",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/teams/search?country=italy"
+          }
+        },
+        {
+          "name": "Equipes de um patrocinador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/teams/sponsor/1"
+          }
+        },
+        {
+          "name": "Classificacao de construtores",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/teams/standings"
+          }
+        },
+        {
+          "name": "Excluir equipe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/teams/{{teamId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Team Principals",
+      "item": [
+        {
+          "name": "Listar chefes (paginado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/principals"
+          }
+        },
+        {
+          "name": "Buscar chefe por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/principals/1"
+          }
+        },
+        {
+          "name": "Criar chefe (sem equipe)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"principalId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/principals",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Andy Cowell\",\n  \"nationality\": \"British\",\n  \"since\": 2025\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alterar chefe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/principals/{{principalId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Andy Cowell\",\n  \"nationality\": \"British\",\n  \"since\": 2024\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Chefes de uma nacionalidade",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/principals/search?nationality=french"
+          }
+        },
+        {
+          "name": "Chefe de uma equipe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/principals/team/1"
+          }
+        },
+        {
+          "name": "Excluir chefe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/principals/{{principalId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Drivers v1",
+      "item": [
+        {
+          "name": "Listar pilotos (paginado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"v1 avisa que vai ser desligada\", () => pm.response.to.have.header(\"Deprecation\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/drivers?page=0&size=3"
+          }
+        },
+        {
+          "name": "Buscar piloto por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/drivers/1"
+          }
+        },
+        {
+          "name": "Criar piloto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"driverId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fernando Alonso\",\n  \"number\": 14,\n  \"nationality\": \"Spanish\",\n  \"birthDate\": \"1981-07-29\",\n  \"worldTitles\": 2,\n  \"team\": {\n    \"id\": 2\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alterar piloto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers/{{driverId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fernando Alonso\",\n  \"number\": 14,\n  \"nationality\": \"Spanish\",\n  \"birthDate\": \"1981-07-29\",\n  \"worldTitles\": 3,\n  \"team\": {\n    \"id\": 2\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Buscar pilotos pelo nome",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/drivers/search?name=lando"
+          }
+        },
+        {
+          "name": "Pilotos de uma equipe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/drivers/team/1"
+          }
+        },
+        {
+          "name": "Classificacao de pilotos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/drivers/standings"
+          }
+        },
+        {
+          "name": "Excluir piloto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers/{{driverId}}"
+          }
+        }
+      ],
+      "description": "Versao 1 (padrao, sem header API-Version)."
+    },
+    {
+      "name": "Drivers v2",
+      "item": [
+        {
+          "name": "Listar pilotos (v2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "API-Version",
+                "value": "2"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers?page=0&size=3"
+          }
+        },
+        {
+          "name": "Buscar piloto por id (v2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"equipe resumida e idade\", () => { const j = pm.response.json(); pm.expect(j.team.name).to.eql(\"McLaren\"); pm.expect(j.age).to.be.a(\"number\"); pm.expect(j._links).to.be.undefined; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "API-Version",
+                "value": "2"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers/1"
+          }
+        },
+        {
+          "name": "Criar piloto (v2, com teamId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"driverV2Id\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              },
+              {
+                "key": "API-Version",
+                "value": "2"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Oliver Bearman\",\n  \"number\": 87,\n  \"nationality\": \"British\",\n  \"birthDate\": \"2005-05-08\",\n  \"worldTitles\": 0,\n  \"teamId\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alterar piloto (v2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              },
+              {
+                "key": "API-Version",
+                "value": "2"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers/{{driverV2Id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Oliver Bearman\",\n  \"number\": 87,\n  \"nationality\": \"British\",\n  \"birthDate\": \"2005-05-08\",\n  \"worldTitles\": 1,\n  \"teamId\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Excluir piloto (igual nas duas versoes)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              },
+              {
+                "key": "API-Version",
+                "value": "2"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers/{{driverV2Id}}"
+          }
+        },
+        {
+          "name": "Pedir versao que nao existe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "API-Version",
+                "value": "3"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers/1"
+          }
+        }
+      ],
+      "description": "Versao 2: mande o header API-Version: 2 (ou ?api-version=2)."
+    },
+    {
+      "name": "Sponsors",
+      "item": [
+        {
+          "name": "Listar patrocinadores (paginado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/sponsors"
+          }
+        },
+        {
+          "name": "Buscar patrocinador por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/sponsors/1"
+          }
+        },
+        {
+          "name": "Criar patrocinador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"sponsorId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/sponsors",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Aramco\",\n  \"industry\": \"Energy\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Alterar patrocinador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/sponsors/{{sponsorId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Aramco\",\n  \"industry\": \"Oil and Gas\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Patrocinadores de um setor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/sponsors/search?industry=energy"
+          }
+        },
+        {
+          "name": "Excluir patrocinador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/sponsors/{{sponsorId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Race Results",
+      "item": [
+        {
+          "name": "Listar resultados (paginado)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/results"
+          }
+        },
+        {
+          "name": "Buscar resultado por id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/results/1"
+          }
+        },
+        {
+          "name": "Registrar resultado (soma pontos)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"resultId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/results",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"raceName\": \"Japanese Grand Prix\",\n  \"circuit\": \"Suzuka\",\n  \"raceDate\": \"2026-03-29\",\n  \"position\": 1,\n  \"points\": 25,\n  \"status\": \"FINISHED\",\n  \"driver\": {\n    \"id\": 1\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Corrigir resultado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/results/{{resultId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"raceName\": \"Japanese Grand Prix\",\n  \"circuit\": \"Suzuka\",\n  \"raceDate\": \"2026-03-29\",\n  \"position\": 1,\n  \"points\": 26,\n  \"status\": \"FINISHED\",\n  \"driver\": {\n    \"id\": 1\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Resultados por status (enum)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/results/status/DNF"
+          }
+        },
+        {
+          "name": "Resultados de uma corrida",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/results/search?race=chinese"
+          }
+        },
+        {
+          "name": "Historico de um piloto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/results/driver/1"
+          }
+        },
+        {
+          "name": "Excluir resultado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/results/{{resultId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "API Keys",
+      "item": [
+        {
+          "name": "Listar chaves (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{adminKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api-keys"
+          }
+        },
+        {
+          "name": "Buscar chave por id (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{adminKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api-keys/1"
+          }
+        },
+        {
+          "name": "Gerar chave nova (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"newKeyId\", pm.response.json().id);",
+                  "pm.collectionVariables.set(\"newKey\", pm.response.json().key);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{adminKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api-keys",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Front-end da equipe\",\n  \"role\": \"USER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "O campo key so aparece nesta resposta. O script de teste guarda ele na variavel newKey."
+          }
+        },
+        {
+          "name": "Usar a chave nova",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{newKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api-keys/me"
+          }
+        },
+        {
+          "name": "Chaves de um nivel (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{adminKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api-keys/role/USER"
+          }
+        },
+        {
+          "name": "Desativar chave (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{adminKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api-keys/{{newKeyId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Front-end da equipe\",\n  \"role\": \"USER\",\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Chave desativada nao funciona",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{newKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api-keys/me"
+          }
+        },
+        {
+          "name": "Revogar chave (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{adminKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api-keys/{{newKeyId}}"
+          }
+        }
+      ],
+      "description": "Gerenciar chaves exige uma chave ADMIN (variavel adminKey). O /api-keys/me aceita qualquer chave."
+    },
+    {
+      "name": "Parte 2 - Demonstracoes",
+      "item": [
+        {
+          "name": "Escrita sem chave -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/sponsors",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Aramco\",\n  \"industry\": \"Energy\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Chave invalida -> 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "chave-que-nao-existe"
+              }
+            ],
+            "url": "{{baseUrl}}/sponsors",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Aramco\",\n  \"industry\": \"Energy\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "USER gerenciando chaves -> 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api-keys"
+          }
+        },
+        {
+          "name": "Idempotencia: primeira vez",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"idemSponsorId\", pm.response.json().id);"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"idemKey\", pm.variables.replaceIn(\"{{$guid}}\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/sponsors",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pirelli\",\n  \"industry\": \"Tyres\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Idempotencia: repetida (nao cria outro)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"devolveu a resposta guardada\", () => { pm.response.to.have.header(\"Idempotent-Replayed\", \"true\"); pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get(\"idemSponsorId\"))); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/sponsors",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pirelli\",\n  \"industry\": \"Tyres\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Idempotencia: mesma chave, outro corpo -> 422",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idemKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/sponsors",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pirelli\",\n  \"industry\": \"Other\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "CORS: origem permitida",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"libera a origem\", () => pm.response.to.have.header(\"Access-Control-Allow-Origin\", \"http://localhost:5173\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "OPTIONS",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://localhost:5173"
+              },
+              {
+                "key": "Access-Control-Request-Method",
+                "value": "POST"
+              }
+            ],
+            "url": "{{baseUrl}}/sponsors"
+          }
+        },
+        {
+          "name": "CORS: origem bloqueada -> 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "OPTIONS",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://site-malicioso.com"
+              },
+              {
+                "key": "Access-Control-Request-Method",
+                "value": "POST"
+              }
+            ],
+            "url": "{{baseUrl}}/sponsors"
+          }
+        },
+        {
+          "name": "Rate limit do visitante (rode 21 vezes)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"mostra o limite\", () => pm.response.to.have.header(\"X-Rate-Limit-Limit\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/teams",
+            "description": "Sem chave, cada IP pode fazer 20 requisicoes por minuto. No Runner, rode so esta requisicao com 21 iterations: a 21a volta 429 com o header Retry-After."
+          }
+        },
+        {
+          "name": "Plano USER: limite maior",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"limite do plano USER\", () => pm.response.to.have.header(\"X-Rate-Limit-Limit\", \"100\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/teams",
+            "description": "Com chave o limite e do plano e conta por chave: USER faz 100 por minuto e ADMIN faz 1000."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Erros (tratamento global)",
+      "item": [
+        {
+          "name": "Validacao (400 com cada campo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"lista os campos\", () => pm.expect(pm.response.json().errors).to.have.property(\"number\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"X\",\n  \"number\": 150,\n  \"team\": {\n    \"id\": 1\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "JSON quebrado (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/drivers",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"name\": ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Id que nao e numero (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/drivers/abc"
+          }
+        },
+        {
+          "name": "Nao encontrado (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/teams/999"
+          }
+        },
+        {
+          "name": "Conflito: equipe com pilotos (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{userKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/teams/1"
+          }
+        }
+      ]
+    }
+  ]
+}

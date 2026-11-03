@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -20,28 +19,29 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 // endpoints dos resultados, mesmo molde do DriverController
-// qualquer mudanca aqui ja muda as tabelas de classificacao
 @RestController
 @Tag(name = "Race Results", description = "Gerenciamento dos resultados de corrida, base para a pontuacao e as tabelas de classificacao")
 public class RaceResultController {
 
-    // exemplo que aparece no Swagger
+    // exemplos do Swagger: o POST cria um registro novo e o PUT altera o id 1, que ja existe
+    // (com o mesmo exemplo nos dois, o PUT dava 409 de valor repetido depois do POST)
+    private static final String NEW_RESULT_EXAMPLE = """
+            { "raceName": "Japanese Grand Prix", "circuit": "Suzuka", "raceDate": "2026-03-29",
+              "position": 1, "points": 25, "status": "FINISHED", "driver": { "id": 1 } }""";
+
     private static final String RESULT_EXAMPLE = """
             { "raceName": "Australian Grand Prix", "circuit": "Albert Park", "raceDate": "2026-03-08",
               "position": 1, "points": 25, "status": "FINISHED", "driver": { "id": 1 } }""";
 
-    private final RaceResultRepository repository;
-    private final DriverRepository driverRepository;
+    private final RaceResultService service;
     private final RaceResultModelAssembler assembler;
     private final PagedResourcesAssembler<RaceResult> pagedResourcesAssembler;
 
     // injecao de dependencia pelo construtor
-    public RaceResultController(RaceResultRepository repository,
-                                DriverRepository driverRepository,
+    public RaceResultController(RaceResultService service,
                                 RaceResultModelAssembler assembler,
                                 PagedResourcesAssembler<RaceResult> pagedResourcesAssembler) {
-        this.repository = repository;
-        this.driverRepository = driverRepository;
+        this.service = service;
         this.assembler = assembler;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
     }
@@ -52,21 +52,18 @@ public class RaceResultController {
     @GetMapping("/results")
     public ResponseEntity<PagedModel<EntityModel<RaceResult>>> getAllResults(
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
-        Page<RaceResult> resultPage = repository.findAll(pageable);
-        return ResponseEntity.ok(pagedResourcesAssembler.toModel(resultPage, assembler));
+        return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.findAll(pageable), assembler));
     }
 
     // GET /results/{id} - 404 se nao achar
-    @Operation(summary = "Get a race result by its id")
+    @Operation(summary = "Get a race result by its id", description = "Retorna um resultado com o piloto e os links HATEOAS")
     @ApiResponse(responseCode = "200", description = "Returns a valid race result",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = RaceResult.class)))
     @ApiResponse(responseCode = "404", description = "Race result not found", content = @Content)
     @ApiResponse(responseCode = "400", description = "Invalid id", content = @Content)
     @GetMapping("/results/{id}")
     public EntityModel<RaceResult> getResultById(@Parameter(description = "Id of the race result", example = "1") @PathVariable Long id) {
-        RaceResult result = repository.findById(id)
-                .orElseThrow(() -> new RaceResultNotFoundException(id));
-        return assembler.toModel(result);
+        return assembler.toModel(service.findById(id));
     }
 
     // POST /results - registra uma corrida e os pontos ja entram na tabela
@@ -81,12 +78,10 @@ public class RaceResultController {
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = RaceResult.class),
-                            examples = @ExampleObject(value = RESULT_EXAMPLE)))
+                            examples = @ExampleObject(value = NEW_RESULT_EXAMPLE)))
             @RequestBody @Valid RaceResult newResult) {
 
-        // troca o piloto que veio so com id pelo piloto de verdade
-        newResult.setDriver(resolveDriver(newResult.getDriver()));
-        EntityModel<RaceResult> entityModel = assembler.toModel(repository.save(newResult));
+        EntityModel<RaceResult> entityModel = assembler.toModel(service.create(newResult));
 
         return ResponseEntity.created(entityModel
                 .getRequiredLink(IanaLinkRelations.SELF)
@@ -94,7 +89,7 @@ public class RaceResultController {
     }
 
     // PUT /results/{id} - da pra usar pra corrigir os pontos de uma corrida
-    @Operation(summary = "Updates a race result")
+    @Operation(summary = "Updates a race result", description = "Substitui todos os dados do resultado; a mudanca nos pontos ja aparece nas tabelas de classificacao")
     @ApiResponse(responseCode = "200", description = "Race result updated",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = RaceResult.class)))
     @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
@@ -110,32 +105,16 @@ public class RaceResultController {
                             examples = @ExampleObject(value = RESULT_EXAMPLE)))
             @RequestBody @Valid RaceResult newResult) {
 
-        RaceResult updated = repository.findById(id)
-                .map(result -> {
-                    result.setRaceName(newResult.getRaceName());
-                    result.setCircuit(newResult.getCircuit());
-                    result.setRaceDate(newResult.getRaceDate());
-                    result.setPosition(newResult.getPosition());
-                    result.setPoints(newResult.getPoints());
-                    result.setStatus(newResult.getStatus());
-                    result.setDriver(resolveDriver(newResult.getDriver()));
-                    return repository.save(result);
-                })
-                .orElseThrow(() -> new RaceResultNotFoundException(id));
-
-        return ResponseEntity.ok(assembler.toModel(updated));
+        return ResponseEntity.ok(assembler.toModel(service.update(id, newResult)));
     }
 
-    // DELETE /results/{id} - ninguem depende de resultado, entao nao tem 409 aqui
-    @Operation(summary = "Deletes a race result")
+    // DELETE /results/{id}
+    @Operation(summary = "Deletes a race result", description = "Remove o resultado e os pontos dele saem das tabelas de classificacao")
     @ApiResponse(responseCode = "204", description = "Successfully deleted a race result", content = @Content)
     @ApiResponse(responseCode = "404", description = "Race result not found, maybe it's already deleted", content = @Content)
     @DeleteMapping("/results/{id}")
-    public ResponseEntity<?> deleteResult(@Parameter(description = "Id of the race result", example = "1") @PathVariable Long id) {
-        if (!repository.existsById(id))
-            return ResponseEntity.notFound().build();
-
-        repository.deleteById(id);
+    public ResponseEntity<Void> deleteResult(@Parameter(description = "Id of the race result (o 17 e o criado no POST de exemplo)", example = "17") @PathVariable Long id) {
+        service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -147,8 +126,7 @@ public class RaceResultController {
     public ResponseEntity<PagedModel<EntityModel<RaceResult>>> getResultsByStatus(
             @Parameter(description = "Status of the result", example = "DNF") @PathVariable ResultStatus status,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
-        Page<RaceResult> resultPage = repository.findByStatus(status, pageable);
-        return ResponseEntity.ok(pagedResourcesAssembler.toModel(resultPage, assembler));
+        return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.findByStatus(status, pageable), assembler));
     }
 
     // GET /results/search?race= - resultados de um GP, ordenados pela posicao
@@ -158,8 +136,7 @@ public class RaceResultController {
     public ResponseEntity<PagedModel<EntityModel<RaceResult>>> getResultsByRace(
             @Parameter(description = "Part of the race name", example = "australian") @RequestParam String race,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "position") Pageable pageable) {
-        Page<RaceResult> resultPage = repository.findByRaceNameContainingIgnoreCase(race, pageable);
-        return ResponseEntity.ok(pagedResourcesAssembler.toModel(resultPage, assembler));
+        return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.searchByRace(race, pageable), assembler));
     }
 
     // GET /results/driver/{driverId} - historico do piloto, ordenado pela data
@@ -170,16 +147,6 @@ public class RaceResultController {
     public ResponseEntity<PagedModel<EntityModel<RaceResult>>> getResultsByDriver(
             @Parameter(description = "Id of the driver", example = "1") @PathVariable Long driverId,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "raceDate") Pageable pageable) {
-        if (!driverRepository.existsById(driverId))
-            throw new DriverNotFoundException(driverId);
-
-        Page<RaceResult> resultPage = repository.findByDriverId(driverId, pageable);
-        return ResponseEntity.ok(pagedResourcesAssembler.toModel(resultPage, assembler));
-    }
-
-    // busca o piloto de verdade no banco (404 se nao existir)
-    private Driver resolveDriver(Driver driver) {
-        return driverRepository.findById(driver.getId())
-                .orElseThrow(() -> new DriverNotFoundException(driver.getId()));
+        return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.findByDriver(driverId, pageable), assembler));
     }
 }

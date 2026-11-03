@@ -28,6 +28,7 @@ public class HomeController {
                 .add(linkTo(methodOn(SponsorController.class).getAllSponsors(Pageable.unpaged())).withRel("sponsors"))
                 .add(linkTo(methodOn(RaceResultController.class).getAllResults(Pageable.unpaged())).withRel("results"))
                 .add(linkTo(methodOn(DriverController.class).getDriverStandings(Pageable.unpaged())).withRel("driverStandings"))
-                .add(linkTo(methodOn(TeamController.class).getConstructorStandings(Pageable.unpaged())).withRel("constructorStandings"));
+                .add(linkTo(methodOn(TeamController.class).getConstructorStandings(Pageable.unpaged())).withRel("constructorStandings"))
+                .add(linkTo(methodOn(ApiKeyController.class).getAllApiKeys(Pageable.unpaged())).withRel("apiKeys"));
     }
 }

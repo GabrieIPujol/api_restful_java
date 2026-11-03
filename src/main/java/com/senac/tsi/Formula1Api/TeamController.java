@@ -2,6 +2,7 @@ package com.senac.tsi.Formula1Api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,21 +10,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.PagedModel;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -33,25 +27,27 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @Tag(name = "Teams", description = "Gerenciamento das equipes (construtores) de Formula 1")
 public class TeamController {
 
-    // exemplo que aparece no Swagger
+    // exemplos do Swagger: o POST cria um registro novo e o PUT altera o id 1, que ja existe
+    // (com o mesmo exemplo nos dois, o PUT dava 409 de valor repetido depois do POST)
+    private static final String NEW_TEAM_EXAMPLE = """
+            { "name": "Williams", "country": "United Kingdom", "base": "Grove", "foundedYear": 1977,
+              "constructorTitles": 9, "sponsors": [ { "id": 2 } ] }""";
+
     private static final String TEAM_EXAMPLE = """
             { "name": "McLaren", "country": "United Kingdom", "base": "Woking", "foundedYear": 1963,
               "constructorTitles": 10, "sponsors": [ { "id": 1 } ] }""";
 
-    private final TeamRepository repository;
-    private final SponsorRepository sponsorRepository;
+    private final TeamService service;
     private final TeamModelAssembler assembler;
     private final PagedResourcesAssembler<Team> pagedResourcesAssembler;
     private final PagedResourcesAssembler<Standing> standingsAssembler;
 
     // injecao de dependencia pelo construtor
-    public TeamController(TeamRepository repository,
-                          SponsorRepository sponsorRepository,
+    public TeamController(TeamService service,
                           TeamModelAssembler assembler,
                           PagedResourcesAssembler<Team> pagedResourcesAssembler,
                           PagedResourcesAssembler<Standing> standingsAssembler) {
-        this.repository = repository;
-        this.sponsorRepository = sponsorRepository;
+        this.service = service;
         this.assembler = assembler;
         this.pagedResourcesAssembler = pagedResourcesAssembler;
         this.standingsAssembler = standingsAssembler;
@@ -63,21 +59,18 @@ public class TeamController {
     @GetMapping("/teams")
     public ResponseEntity<PagedModel<EntityModel<Team>>> getAllTeams(
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
-        Page<Team> teamPage = repository.findAll(pageable);
-        return ResponseEntity.ok(pagedResourcesAssembler.toModel(teamPage, assembler));
+        return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.findAll(pageable), assembler));
     }
 
     // GET /teams/{id} - 404 se nao achar
-    @Operation(summary = "Get a team by its id")
+    @Operation(summary = "Get a team by its id", description = "Retorna uma equipe com os patrocinadores e os links HATEOAS")
     @ApiResponse(responseCode = "200", description = "Returns a valid team",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = Team.class)))
     @ApiResponse(responseCode = "404", description = "Team not found", content = @Content)
     @ApiResponse(responseCode = "400", description = "Invalid id", content = @Content)
     @GetMapping("/teams/{id}")
     public EntityModel<Team> getTeamById(@Parameter(description = "Id of the team", example = "1") @PathVariable Long id) {
-        Team team = repository.findById(id)
-                .orElseThrow(() -> new TeamNotFoundException(id));
-        return assembler.toModel(team);
+        return assembler.toModel(service.findById(id));
     }
 
     // POST /teams - cria a equipe ja com os patrocinadores
@@ -93,12 +86,10 @@ public class TeamController {
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = Team.class),
-                            examples = @ExampleObject(value = TEAM_EXAMPLE)))
+                            examples = @ExampleObject(value = NEW_TEAM_EXAMPLE)))
             @RequestBody @Valid Team newTeam) {
 
-        // os patrocinadores chegam so com id, aqui busca os de verdade
-        newTeam.setSponsors(resolveSponsors(newTeam.getSponsors()));
-        EntityModel<Team> entityModel = assembler.toModel(repository.save(newTeam));
+        EntityModel<Team> entityModel = assembler.toModel(service.create(newTeam));
 
         return ResponseEntity.created(entityModel
                 .getRequiredLink(IanaLinkRelations.SELF)
@@ -111,6 +102,7 @@ public class TeamController {
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = Team.class)))
     @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
     @ApiResponse(responseCode = "404", description = "Team or sponsor not found", content = @Content)
+    @ApiResponse(responseCode = "409", description = "A team with this name already exists", content = @Content)
     @PutMapping("/teams/{id}")
     public ResponseEntity<EntityModel<Team>> updateTeam(
             @Parameter(description = "Id of the team", example = "1") @PathVariable Long id,
@@ -122,19 +114,7 @@ public class TeamController {
                             examples = @ExampleObject(value = TEAM_EXAMPLE)))
             @RequestBody @Valid Team newTeam) {
 
-        Team updated = repository.findById(id)
-                .map(team -> {
-                    team.setName(newTeam.getName());
-                    team.setCountry(newTeam.getCountry());
-                    team.setBase(newTeam.getBase());
-                    team.setFoundedYear(newTeam.getFoundedYear());
-                    team.setConstructorTitles(newTeam.getConstructorTitles());
-                    team.setSponsors(resolveSponsors(newTeam.getSponsors()));
-                    return repository.save(team);
-                })
-                .orElseThrow(() -> new TeamNotFoundException(id));
-
-        return ResponseEntity.ok(assembler.toModel(updated));
+        return ResponseEntity.ok(assembler.toModel(service.update(id, newTeam)));
     }
 
     // DELETE /teams/{id}
@@ -143,17 +123,8 @@ public class TeamController {
     @ApiResponse(responseCode = "404", description = "Team not found, maybe it's already deleted", content = @Content)
     @ApiResponse(responseCode = "409", description = "Team still has drivers or a principal", content = @Content)
     @DeleteMapping("/teams/{id}")
-    public ResponseEntity<?> deleteTeam(@Parameter(description = "Id of the team", example = "1") @PathVariable Long id) {
-        var team = repository.findById(id);
-        if (team.isEmpty())
-            return ResponseEntity.notFound().build();
-
-        // se ainda tem piloto ou chefe nao deixa apagar
-        if (!team.get().getDrivers().isEmpty() || team.get().getPrincipal() != null)
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Team still has drivers or a principal");
-
-        // os vinculos com patrocinador saem junto porque a equipe e a dona
-        repository.delete(team.get());
+    public ResponseEntity<Void> deleteTeam(@Parameter(description = "Id of the team (o 5 e a criada no POST de exemplo)", example = "5") @PathVariable Long id) {
+        service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -164,8 +135,7 @@ public class TeamController {
     public ResponseEntity<PagedModel<EntityModel<Team>>> getTeamsByCountry(
             @Parameter(description = "Country of the team", example = "Italy") @RequestParam String country,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
-        Page<Team> teamPage = repository.findByCountryIgnoreCase(country, pageable);
-        return ResponseEntity.ok(pagedResourcesAssembler.toModel(teamPage, assembler));
+        return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.searchByCountry(country, pageable), assembler));
     }
 
     // GET /teams/sponsor/{sponsorId} - equipes de um patrocinador
@@ -176,37 +146,22 @@ public class TeamController {
     public ResponseEntity<PagedModel<EntityModel<Team>>> getTeamsBySponsor(
             @Parameter(description = "Id of the sponsor", example = "1") @PathVariable Long sponsorId,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
-        if (!sponsorRepository.existsById(sponsorId))
-            throw new SponsorNotFoundException(sponsorId);
-
-        Page<Team> teamPage = repository.findBySponsorsId(sponsorId, pageable);
-        return ResponseEntity.ok(pagedResourcesAssembler.toModel(teamPage, assembler));
+        return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.findBySponsor(sponsorId, pageable), assembler));
     }
 
-    // GET /teams/standings - tabela de construtores, mesma logica da de pilotos
+    // GET /teams/standings - tabela de construtores
     @Operation(summary = "Constructors' championship standings",
             description = "Consulta personalizada: tabela do campeonato de construtores, somando os pontos dos resultados de todos os pilotos da equipe, ordenada por pontos")
     @ApiResponse(responseCode = "200", description = "Returned the paginated standings table")
+    // a tabela sempre ordena por pontos, entao no swagger so aparecem page e size (o sort seria ignorado)
+    @Parameter(name = "page", in = ParameterIn.QUERY, description = "Zero-based page index (0..N)",
+            schema = @Schema(type = "integer", defaultValue = "0"))
+    @Parameter(name = "size", in = ParameterIn.QUERY, description = "The size of the page to be returned",
+            schema = @Schema(type = "integer", defaultValue = "10"))
     @GetMapping("/teams/standings")
     public ResponseEntity<PagedModel<EntityModel<Standing>>> getConstructorStandings(
-            @ParameterObject @PageableDefault(size = 10, page = 0) Pageable pageable) {
-        Page<Standing> page = repository.findConstructorStandings(PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()));
-        AtomicLong position = new AtomicLong(page.getPageable().getOffset());
-        Page<Standing> ranked = page.map(standing -> standing.withPosition(position.incrementAndGet()));
-
-        return ResponseEntity.ok(standingsAssembler.toModel(ranked, standing -> EntityModel.of(standing,
+            @Parameter(hidden = true) @PageableDefault(size = 10, page = 0) Pageable pageable) {
+        return ResponseEntity.ok(standingsAssembler.toModel(service.standings(pageable), standing -> EntityModel.of(standing,
                 linkTo(methodOn(TeamController.class).getTeamById(standing.id())).withRel("team"))));
-    }
-
-    // troca cada patrocinador que veio so com id pelo do banco (404 se algum nao existir)
-    private Set<Sponsor> resolveSponsors(Set<Sponsor> sponsors) {
-        Set<Sponsor> resolved = new HashSet<>();
-        if (sponsors == null)
-            return resolved;
-
-        for (Sponsor sponsor : sponsors)
-            resolved.add(sponsorRepository.findById(sponsor.getId())
-                    .orElseThrow(() -> new SponsorNotFoundException(sponsor.getId())));
-        return resolved;
     }
 }

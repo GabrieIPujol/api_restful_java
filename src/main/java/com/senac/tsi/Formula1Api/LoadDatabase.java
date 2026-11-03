@@ -2,6 +2,7 @@ package com.senac.tsi.Formula1Api;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,8 +20,15 @@ public class LoadDatabase {
     // o CommandLineRunner roda uma vez logo depois que a aplicacao sobe
     @Bean
     CommandLineRunner initDatabase(TeamRepository teams, TeamPrincipalRepository principals, DriverRepository drivers,
-                                   SponsorRepository sponsors, RaceResultRepository results) {
+                                   SponsorRepository sponsors, RaceResultRepository results, ApiKeyService apiKeys,
+                                   @Value("${app.security.admin-key}") String adminKey,
+                                   @Value("${app.security.user-key}") String userKey) {
         return args -> {
+            // as duas chaves que vem do application.properties (ou das variaveis ADMIN_API_KEY e USER_API_KEY)
+            apiKeys.ensureKey("Admin (configuracao)", ApiKeyRole.ADMIN, adminKey);
+            apiKeys.ensureKey("Usuario de demonstracao", ApiKeyRole.USER, userKey);
+            log.info("Preloaded the ADMIN and USER API keys from the configuration");
+
             // patrocinadores primeiro, porque as equipes apontam pra eles
             Sponsor shell = sponsors.save(new Sponsor("Shell", "Energy"));
             Sponsor hp = sponsors.save(new Sponsor("HP", "Technology"));
