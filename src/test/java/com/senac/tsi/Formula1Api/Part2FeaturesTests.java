@@ -37,8 +37,13 @@ class Part2FeaturesTests {
     void writeNeedsApiKeyAndManagingKeysNeedsAdmin() throws Exception {
         String body = "{\"name\":\"Sponsor Teste Chave\",\"industry\":\"Energy\"}";
 
-        // leitura e livre, escrita sem chave volta 401
+        // leitura e livre, mas chave errada no GET da 401 em vez de ser ignorada
         mvc.perform(get("/sponsors").with(ip("10.1.0.1"))).andExpect(status().isOk());
+        mvc.perform(get("/sponsors").with(ip("10.1.0.1")).header("X-API-Key", "chave-que-nao-existe"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/sponsors").with(ip("10.1.0.1")).header("X-API-Key", USER_KEY)).andExpect(status().isOk());
+
+        // escrita sem chave volta 401
         mvc.perform(post("/sponsors").with(ip("10.1.0.1")).contentType(APPLICATION_JSON).content(body))
                 .andExpect(status().isUnauthorized());
         mvc.perform(post("/sponsors").with(ip("10.1.0.1")).header("X-API-Key", "chave-que-nao-existe")
@@ -121,6 +126,17 @@ class Part2FeaturesTests {
 
         // o IP estourado ainda passa se usar uma chave, porque a chave tem o proprio plano
         mvc.perform(get("/teams").with(ip("10.1.0.4")).header("X-API-Key", USER_KEY)).andExpect(status().isOk());
+    }
+
+    @Test
+    void fakeForwardedForDoesNotResetTheLimit() throws Exception {
+        // o cloudflare manda o IP de verdade, o X-Forwarded-For muda a cada requisicao como faria quem quer burlar
+        for (int i = 0; i < 20; i++) {
+            mvc.perform(get("/teams").header("CF-Connecting-IP", "203.0.113.7").header("X-Forwarded-For", "1.1.1." + i))
+                    .andExpect(status().isOk());
+        }
+        mvc.perform(get("/teams").header("CF-Connecting-IP", "203.0.113.7").header("X-Forwarded-For", "9.9.9.9"))
+                .andExpect(status().isTooManyRequests());
     }
 
     @Test

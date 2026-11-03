@@ -115,7 +115,7 @@ Cada entidade tem CRUD completo, listagem paginada (`page`, `size`, `sort`) e co
 
 | Operação | Exige |
 |---|---|
-| `GET` nos dados | Nada (leitura pública) |
+| `GET` nos dados | Nada (leitura pública). A chave é opcional, mas se for enviada precisa ser válida |
 | `POST`, `PUT`, `DELETE` nos dados | Chave `USER` ou `ADMIN` |
 | Gerenciar chaves em `/api-keys` | Chave `ADMIN` (o `/api-keys/me` aceita qualquer chave) |
 
@@ -126,7 +126,7 @@ Duas chaves são criadas quando a aplicação sobe, com os valores das variávei
 | `ADMIN_API_KEY` | ADMIN |
 | `USER_API_KEY` | USER |
 
-Uma chave ADMIN gera chaves novas com `POST /api-keys` (`{ "name": "Front-end", "role": "USER" }`). A chave completa aparece **só na resposta da criação**. O banco guarda apenas o hash SHA-256 dela. `PUT /api-keys/{id}` com `"active": false` desativa a chave, e `DELETE` revoga. Sem chave ou com chave inválida, a resposta é **401**; com chave USER em `/api-keys`, **403**.
+Uma chave ADMIN gera chaves novas com `POST /api-keys` (`{ "name": "Front-end", "role": "USER" }`). A chave completa aparece **só na resposta da criação**. O banco guarda apenas o hash SHA-256 dela. `PUT /api-keys/{id}` com `"active": false` desativa a chave, e `DELETE` revoga. Sem chave ou com chave inválida, a resposta é **401**; com chave USER em `/api-keys`, **403**. Isso vale também nos `GET`: uma chave errada não é ignorada, para ninguém achar que está no plano USER sem estar.
 
 No Swagger, clique em **Authorize** e cole a chave.
 
@@ -152,7 +152,7 @@ O limite depende do **plano** de quem chama:
 | Chave `USER` | 100 requisições por minuto | Chave | `RATE_LIMIT_USER_PER_MINUTE` |
 | Chave `ADMIN` | 1000 requisições por minuto | Chave | `RATE_LIMIT_ADMIN_PER_MINUTE` |
 
-O limite da chave vale em qualquer IP, e uma chave inválida cai no limite de visitante. Toda resposta traz `X-Rate-Limit-Limit`, com o limite do seu plano, e `X-Rate-Limit-Remaining`. Passou do limite, a resposta é **429 Too Many Requests**, com o header `Retry-After` dizendo em quantos segundos tentar de novo. O Swagger e o console do H2 não contam no limite.
+O limite da chave vale em qualquer IP. Uma chave inválida recebe 401, e a tentativa conta no limite de visitante. No Render, o IP do visitante vem do header `CF-Connecting-IP`, que o Cloudflare preenche e o cliente não consegue falsificar. Toda resposta traz `X-Rate-Limit-Limit`, com o limite do seu plano, e `X-Rate-Limit-Remaining`. Passou do limite, a resposta é **429 Too Many Requests**, com o header `Retry-After` dizendo em quantos segundos tentar de novo. O Swagger e o console do H2 não contam no limite.
 
 ### CORS
 
@@ -217,3 +217,7 @@ O `Dockerfile` faz o build com Maven e roda o `.jar`. No Render, crie um **Web S
 Sem as duas chaves, a API não sobe e o deploy falha. Assim ela nunca roda com uma chave conhecida. Para gerar uma chave, rode `[guid]::NewGuid().ToString("N")` no PowerShell.
 
 O Render define a `PORT` sozinho. No plano gratuito, o serviço dorme depois de 15 minutos sem uso, e o primeiro acesso depois disso leva cerca de 1 minuto.
+
+## Versões e licença
+
+O histórico de mudanças fica no [CHANGELOG.md](CHANGELOG.md). O código está sob a licença MIT, no arquivo [LICENSE](LICENSE).

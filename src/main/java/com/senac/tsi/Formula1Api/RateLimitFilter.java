@@ -92,11 +92,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
     }
 
-    // no render a api fica atras de um proxy, entao o IP de verdade vem no X-Forwarded-For
+    // no render a api fica atras do cloudflare, que poe o IP de verdade no CF-Connecting-IP
+    // o X-Forwarded-For nao serve: o primeiro valor dele quem escreve e o proprio cliente, ai era so mandar um IP falso por requisicao
+    // ponytail: so e confiavel atras do cloudflare, num host sem ele troque pelo header que o proxy de la preenche
     private String clientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+        String cloudflare = request.getHeader("CF-Connecting-IP");
+        if (cloudflare != null && !cloudflare.isBlank()) {
+            return cloudflare.trim();
         }
         return request.getRemoteAddr();
     }

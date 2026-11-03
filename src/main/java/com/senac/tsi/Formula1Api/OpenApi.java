@@ -38,7 +38,7 @@ public class OpenApi {
         return new OpenAPI()
                 .info(new Info()
                         .title("Formula 1 API")
-                        .version("2.0.0")
+                        .version("2.0.1")
                         .description("API RESTful para gerenciar equipes, chefes de equipe, pilotos, patrocinadores " +
                                 "e resultados de corrida da Formula 1, com tabelas de classificacao de pilotos e construtores. " +
                                 "Todas as listagens sao paginadas (page, size, sort) e as respostas seguem HATEOAS (HAL).\n\n" +
@@ -116,6 +116,7 @@ public class OpenApi {
             // assim, depois do Authorize, o Swagger manda a chave nos GET e vale o limite do plano
             operation.addSecurityItem(new SecurityRequirement().addList(API_KEY_SCHEME));
             operation.addSecurityItem(new SecurityRequirement());
+            operation.getResponses().addApiResponse("401", new ApiResponse().description("Invalid or revoked X-API-Key (without a key, reading is free)"));
         }
 
         // todo POST aceita Idempotency-Key

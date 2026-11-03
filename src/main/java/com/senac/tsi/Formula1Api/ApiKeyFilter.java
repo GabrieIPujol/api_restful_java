@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.Optional;
 
 // autenticacao por chave de API (header X-API-Key), roda antes de qualquer controller
-//   - GET e publico, qualquer um le
+//   - GET e publico, qualquer um le (mas uma chave errada da 401)
 //   - POST, PUT e DELETE precisam de uma chave USER ou ADMIN
 //   - /api-keys precisa de chave ADMIN (menos o /api-keys/me, que aceita qualquer chave)
 // ordem 2: depois do rate limit (1) e antes da idempotencia (3)
@@ -45,14 +45,17 @@ public class ApiKeyFilter extends OncePerRequestFilter {
         boolean keysEndpoint = uri.startsWith("/api-keys");
         boolean read = "GET".equalsIgnoreCase(request.getMethod()) || "HEAD".equalsIgnoreCase(request.getMethod());
 
-        // leitura dos dados e livre
-        if (read && !keysEndpoint) {
+        String rawKey = request.getHeader(HEADER);
+        boolean hasKey = rawKey != null && !rawKey.isBlank();
+
+        // leitura dos dados e livre, mas se mandou chave ela tem que valer
+        // senao quem errou a chave achava que estava no plano USER e caia no de visitante sem aviso
+        if (read && !keysEndpoint && !hasKey) {
             chain.doFilter(request, response);
             return;
         }
 
-        String rawKey = request.getHeader(HEADER);
-        if (rawKey == null || rawKey.isBlank()) {
+        if (!hasKey) {
             ProblemResponse.write(request, response, 401, keysEndpoint
                     ? "Missing X-API-Key header: /api-keys requires an API key"
                     : "Missing X-API-Key header: POST, PUT and DELETE require an API key");
