@@ -1,5 +1,10 @@
 # Formula 1 API
 
+[![Java 21](https://img.shields.io/badge/Java-21-orange)](https://openjdk.org/projects/jdk/21/)
+[![Spring Boot 4.1.1](https://img.shields.io/badge/Spring_Boot-4.1.1-6DB33F)](https://spring.io/projects/spring-boot)
+[![versão 2.0.1](https://img.shields.io/badge/vers%C3%A3o-2.0.1-blue)](CHANGELOG.md)
+[![licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green)](LICENSE)
+
 API RESTful em Spring Boot que gerencia equipes, chefes de equipe, pilotos, patrocinadores e resultados de corrida da Fórmula 1. A partir dos resultados, ela calcula as tabelas de classificação de pilotos e de construtores.
 
 Projeto final da disciplina de Desenvolvimento de APIs com Spring Boot (TSI · Senac).
