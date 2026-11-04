@@ -196,6 +196,19 @@ class Part2FeaturesTests {
     }
 
     @Test
+    void onlyJsonIsAccepted() throws Exception {
+        // a biblioteca de YAML vem com o swagger, mas a api nao pode aceitar nem devolver YAML
+        mvc.perform(post("/sponsors").with(ip("10.1.0.11")).header("X-API-Key", USER_KEY)
+                        .contentType("application/yaml").content("name: Teste YAML\nindustry: Energy"))
+                .andExpect(status().isUnsupportedMediaType());
+        mvc.perform(post("/sponsors").with(ip("10.1.0.11")).header("X-API-Key", USER_KEY)
+                        .contentType("application/xml").content("<sponsor><name>Teste XML</name></sponsor>"))
+                .andExpect(status().isUnsupportedMediaType());
+        mvc.perform(get("/sponsors/1").with(ip("10.1.0.11")).accept("application/yaml"))
+                .andExpect(status().isNotAcceptable());
+    }
+
+    @Test
     void invalidSortReturns400InsteadOf500() throws Exception {
         mvc.perform(get("/drivers").param("sort", "abc").with(ip("10.1.0.8")))
                 .andExpect(status().isBadRequest())

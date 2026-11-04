@@ -2,7 +2,7 @@
 
 [![Java 21](https://img.shields.io/badge/Java-21-orange)](https://openjdk.org/projects/jdk/21/)
 [![Spring Boot 4.1.1](https://img.shields.io/badge/Spring_Boot-4.1.1-6DB33F)](https://spring.io/projects/spring-boot)
-[![versão 2.0.1](https://img.shields.io/badge/vers%C3%A3o-2.0.1-blue)](CHANGELOG.md)
+[![versão 2.0.2](https://img.shields.io/badge/vers%C3%A3o-2.0.2-blue)](CHANGELOG.md)
 [![licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green)](LICENSE)
 
 API RESTful em Spring Boot que gerencia equipes, chefes de equipe, pilotos, patrocinadores e resultados de corrida da Fórmula 1. A partir dos resultados, ela calcula as tabelas de classificação de pilotos e de construtores.
@@ -96,6 +96,7 @@ CorsFilter (0) → RateLimitFilter (1) → ApiKeyFilter (2) → IdempotencyFilte
 src/main/java/com/senac/tsi/Formula1Api/
 ├── <Entidade>.java / <Entidade>Repository / <Entidade>Service / <Entidade>Controller / <Entidade>ModelAssembler
 ├── ApiKeyFilter, RateLimitFilter, IdempotencyFilter, CorsConfig, ApiVersionConfig   ← recursos da parte 2
+├── JsonOnlyConfig   ← a API só aceita e devolve JSON
 ├── ApiExceptionAdvice, ProblemResponse, ConflictException, *NotFoundException      ← tratamento de erros
 ├── OpenApi, HomeController, LoadDatabase
 └── v2/   ← versão 2 dos pilotos (DriverV2Controller e DTOs)

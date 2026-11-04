@@ -38,16 +38,27 @@ public class OpenApi {
         return new OpenAPI()
                 .info(new Info()
                         .title("Formula 1 API")
-                        .version("2.0.1")
+                        .version("2.0.2")
                         .description("API RESTful para gerenciar equipes, chefes de equipe, pilotos, patrocinadores " +
                                 "e resultados de corrida da Formula 1, com tabelas de classificacao de pilotos e construtores. " +
-                                "Todas as listagens sao paginadas (page, size, sort) e as respostas seguem HATEOAS (HAL).\n\n" +
+                                "Todas as listagens sao paginadas (`page`, `size`, `sort`).\n\n" +
+                                "**HATEOAS (HAL):** cada resposta traz um bloco `_links` com os enderecos do que da para fazer em seguida " +
+                                "(ver, alterar, apagar, ir para os registros relacionados ou para a proxima pagina). " +
+                                "Assim o cliente navega pela API seguindo os links, sem montar URL na mao. " +
+                                "Comece pelo `GET /`, que lista todos os recursos. A v2 dos pilotos responde sem `_links`.\n\n" +
                                 "**Chave de API:** GET e publico. POST, PUT e DELETE exigem o header `X-API-Key` (clique em Authorize). " +
                                 "Gerenciar chaves em `/api-keys` exige uma chave ADMIN.\n\n" +
-                                "**Idempotencia:** mande `Idempotency-Key` nos POST para poder repetir sem criar duplicado.\n\n" +
-                                "**Planos (rate limit):** visitante sem chave faz " + visitorLimit + " requisicoes por minuto (por IP), " +
-                                "chave USER faz " + userLimit + " e chave ADMIN faz " + adminLimit + " (por chave). " +
-                                "Passou disso volta 429 com `Retry-After`; o header `X-Rate-Limit-Limit` mostra o limite do seu plano.\n\n" +
+                                "**Idempotencia:** evita registro duplicado quando o mesmo POST e enviado duas vezes " +
+                                "(por exemplo, a internet caiu e o cliente reenviou). Mande no POST o header `Idempotency-Key` " +
+                                "com um codigo unico. Se chegar outro POST com o mesmo codigo, a API nao cria de novo: " +
+                                "devolve a resposta da primeira vez.\n\n" +
+                                "**Planos (rate limit):** cada plano tem um limite de requisicoes por minuto. Passou dele, a resposta e `429`, " +
+                                "e o header `Retry-After` diz em quantos segundos tentar de novo. O header `X-Rate-Limit-Limit` mostra o limite do seu plano.\n\n" +
+                                "| Plano | Como acessar | O que pode | Limite por minuto | Contado por |\n" +
+                                "|---|---|---|---|---|\n" +
+                                "| Visitante | Sem chave | Ler os dados (GET) | " + visitorLimit + " | IP |\n" +
+                                "| USER | Chave USER no `X-API-Key` | Ler e alterar os dados (POST, PUT, DELETE) | " + userLimit + " | Chave |\n" +
+                                "| ADMIN | Chave ADMIN no `X-API-Key` | Tudo isso e gerenciar as chaves em `/api-keys` | " + adminLimit + " | Chave |\n\n" +
                                 "**Versoes:** escolha no seletor acima. A v2 muda os pilotos e e pedida com o header `API-Version: 2`.")
                         // as duas paginas ficam em src/main/resources/static, o proprio spring serve elas
                         .termsOfService("/terms.html")

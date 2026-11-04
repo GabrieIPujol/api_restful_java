@@ -2,6 +2,14 @@
 
 Todas as mudanças da Formula 1 API ficam registradas aqui. As versões seguem o [versionamento semântico](https://semver.org/lang/pt-BR/): **MAJOR** quebra quem já usa a API, **MINOR** acrescenta recursos e **PATCH** corrige problemas.
 
+## [2.0.2] - 2026-11-04
+
+### Corrigido
+- A API aceitava e devolvia YAML sem querer: a biblioteca de YAML vem junto com o Swagger, e o Spring passava a usá-la sozinho. Agora ela só fala JSON: um corpo em YAML ou XML recebe **415**, e pedir a resposta em YAML recebe **406**.
+
+### Alterado
+- Descrição do Swagger: explica como a API usa o HATEOAS e a idempotência, e mostra os planos numa tabela.
+
 ## [2.0.1] - 2026-11-03
 
 ### Corrigido
