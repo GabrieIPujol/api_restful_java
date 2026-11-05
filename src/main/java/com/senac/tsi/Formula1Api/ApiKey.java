@@ -18,7 +18,7 @@ import java.util.Objects;
 public class ApiKey {
     // id gerado pelo banco
     private @Id
-    @GeneratedValue long id;
+    @GeneratedValue @Schema(example = "1") long id;
 
     // pra saber de quem e a chave, ex.: "front-end da equipe"
     @NotBlank
@@ -51,7 +51,8 @@ public class ApiKey {
     // a chave aberta, nao vai pro banco e so aparece uma vez, na resposta da criacao
     @Transient
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    @Schema(accessMode = Schema.AccessMode.READ_ONLY, description = "A chave completa: aparece so na resposta da criacao, guarde ela")
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY, description = "A chave completa: aparece so na resposta da criacao, guarde ela",
+            example = "f1_Xk2p9Qm4Lr7Tz0Wd3Hs8Vb6Nc1Ya5UeK")
     private String key;
 
     // construtor vazio e obrigatorio pro JPA e pro Jackson

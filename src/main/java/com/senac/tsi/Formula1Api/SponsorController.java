@@ -21,7 +21,8 @@ import org.springframework.web.bind.annotation.*;
 // endpoints dos patrocinadores, o mais simples de todos porque nao aponta pra ninguem
 // pra ligar um patrocinador numa equipe usa o campo sponsors no POST/PUT de /teams
 @RestController
-@Tag(name = "Sponsors", description = "Gerenciamento dos patrocinadores (Many-to-Many com Team)")
+@Tag(name = "Patrocinadores", description = "Patrocinadores das equipes. Um patrocinador pode apoiar varias equipes "
+        + "e uma equipe pode ter varios patrocinadores (Many-to-Many)")
 public class SponsorController {
 
     // exemplos do Swagger: o POST cria um registro novo e o PUT altera o id 1, que ja existe
@@ -46,8 +47,9 @@ public class SponsorController {
     }
 
     // GET /sponsors - lista paginada
-    @Operation(summary = "Get all sponsors", description = "Lista paginada de todos os patrocinadores")
-    @ApiResponse(responseCode = "200", description = "Returned a paginated list of sponsors")
+    @Operation(summary = "Lista os patrocinadores", description = "Lista paginada de todos os patrocinadores. "
+            + "Use page, size e sort para navegar e ordenar (ex.: sort=name,asc)")
+    @ApiResponse(responseCode = "200", description = "Lista paginada de patrocinadores")
     @GetMapping("/sponsors")
     public ResponseEntity<PagedModel<EntityModel<Sponsor>>> getAllSponsors(
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
@@ -55,25 +57,31 @@ public class SponsorController {
     }
 
     // GET /sponsors/{id} - 404 se nao achar
-    @Operation(summary = "Get a sponsor by its id", description = "Retorna um patrocinador com os links HATEOAS")
-    @ApiResponse(responseCode = "200", description = "Returns a valid sponsor",
+    @Operation(summary = "Busca um patrocinador pelo id",
+            description = "Retorna o patrocinador e o link para as equipes que ele patrocina (teams)")
+    @ApiResponse(responseCode = "200", description = "Patrocinador encontrado",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = Sponsor.class)))
-    @ApiResponse(responseCode = "404", description = "Sponsor not found", content = @Content)
-    @ApiResponse(responseCode = "400", description = "Invalid id", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Patrocinador nao encontrado - nao existe patrocinador com esse id "
+            + "(nunca foi criado ou ja foi excluido)", content = @Content)
+    @ApiResponse(responseCode = "400", description = "Id invalido - o id precisa ser um numero inteiro (ex.: 1); "
+            + "texto como abc e recusado", content = @Content)
     @GetMapping("/sponsors/{id}")
-    public EntityModel<Sponsor> getSponsorById(@Parameter(description = "Id of the sponsor", example = "1") @PathVariable Long id) {
+    public EntityModel<Sponsor> getSponsorById(@Parameter(description = "Id do patrocinador", example = "1") @PathVariable Long id) {
         return assembler.toModel(service.findById(id));
     }
 
     // POST /sponsors
-    @Operation(summary = "Creates a new sponsor", description = "Para vincular a uma equipe, use o campo sponsors no POST/PUT de /teams")
-    @ApiResponse(responseCode = "201", description = "Sponsor created; Location header points to the new resource")
-    @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
-    @ApiResponse(responseCode = "409", description = "A sponsor with this name already exists", content = @Content)
+    @Operation(summary = "Cria um patrocinador", description = "Cadastra um patrocinador novo, ainda sem equipe. "
+            + "Para ligar ele a uma equipe, coloque o id dele na lista sponsors do POST ou PUT de /teams. O nome nao pode repetir")
+    @ApiResponse(responseCode = "201", description = "Patrocinador criado; o header Location traz o endereco dele")
+    @ApiResponse(responseCode = "400", description = "Dados invalidos - name (2 a 100 caracteres) e industry (2 a 60) "
+            + "sao obrigatorios. Tambem acontece com campo do tipo errado ou JSON mal formado; "
+            + "a resposta diz qual campo falhou e por que", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Nome repetido - ja existe um patrocinador com esse nome", content = @Content)
     @PostMapping("/sponsors")
     public ResponseEntity<EntityModel<Sponsor>> newSponsor(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "New sponsor",
+                    description = "Dados do patrocinador novo",
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = Sponsor.class),
@@ -88,17 +96,19 @@ public class SponsorController {
     }
 
     // PUT /sponsors/{id}
-    @Operation(summary = "Updates a sponsor", description = "Substitui todos os dados do patrocinador")
-    @ApiResponse(responseCode = "200", description = "Sponsor updated",
+    @Operation(summary = "Atualiza um patrocinador", description = "Substitui o nome e o setor do patrocinador. "
+            + "As equipes que ele patrocina nao mudam (isso e feito pela lista sponsors de /teams)")
+    @ApiResponse(responseCode = "200", description = "Patrocinador atualizado",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = Sponsor.class)))
-    @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Sponsor not found", content = @Content)
-    @ApiResponse(responseCode = "409", description = "A sponsor with this name already exists", content = @Content)
+    @ApiResponse(responseCode = "400", description = "Dados invalidos - o id nao e um numero inteiro, ou algum campo do JSON "
+            + "e invalido (mesmas regras do POST)", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Patrocinador nao encontrado - nao existe patrocinador com esse id", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Nome repetido - outro patrocinador ja usa esse nome", content = @Content)
     @PutMapping("/sponsors/{id}")
     public ResponseEntity<EntityModel<Sponsor>> updateSponsor(
-            @Parameter(description = "Id of the sponsor", example = "1") @PathVariable Long id,
+            @Parameter(description = "Id do patrocinador", example = "1") @PathVariable Long id,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Updated sponsor",
+                    description = "Dados atualizados do patrocinador",
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = Sponsor.class),
@@ -109,21 +119,24 @@ public class SponsorController {
     }
 
     // DELETE /sponsors/{id} - o patrocinador sai de todas as equipes antes
-    @Operation(summary = "Deletes a sponsor", description = "Tambem remove o vinculo do patrocinador com as equipes")
-    @ApiResponse(responseCode = "204", description = "Successfully deleted a sponsor", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Sponsor not found, maybe it's already deleted", content = @Content)
+    @Operation(summary = "Exclui um patrocinador", description = "Apaga o patrocinador e tira ele da lista sponsors "
+            + "de todas as equipes que ele apoiava; as equipes continuam existindo")
+    @ApiResponse(responseCode = "204", description = "Patrocinador excluido", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Patrocinador nao encontrado - nao existe patrocinador com esse id "
+            + "(talvez ja tenha sido excluido)", content = @Content)
     @DeleteMapping("/sponsors/{id}")
-    public ResponseEntity<Void> deleteSponsor(@Parameter(description = "Id of the sponsor (o 6 e o criado no POST de exemplo)", example = "6") @PathVariable Long id) {
+    public ResponseEntity<Void> deleteSponsor(@Parameter(description = "Id do patrocinador (o 6 e o criado no POST de exemplo)", example = "6") @PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     // GET /sponsors/search?industry= - patrocinadores de um setor
-    @Operation(summary = "Search sponsors by industry", description = "Consulta personalizada: patrocinadores de um setor (sem diferenciar maiusculas)")
-    @ApiResponse(responseCode = "200", description = "Returned a paginated list of sponsors")
+    @Operation(summary = "Busca patrocinadores pelo setor", description = "Consulta personalizada: patrocinadores de um setor. "
+            + "O setor precisa ser completo, mas maiusculas e minusculas nao importam (energy encontra Energy)")
+    @ApiResponse(responseCode = "200", description = "Lista paginada dos patrocinadores do setor (vazia se nenhum for)")
     @GetMapping("/sponsors/search")
     public ResponseEntity<PagedModel<EntityModel<Sponsor>>> getSponsorsByIndustry(
-            @Parameter(description = "Industry", example = "Energy") @RequestParam String industry,
+            @Parameter(description = "Setor, completo e em ingles", example = "Energy") @RequestParam String industry,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.searchByIndustry(industry, pageable), assembler));
     }

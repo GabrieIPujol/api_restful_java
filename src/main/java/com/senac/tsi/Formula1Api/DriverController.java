@@ -25,7 +25,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 // endpoints dos pilotos, versao 1 (a padrao quando nao manda o header API-Version)
 // listar, buscar, criar e alterar tem uma v2 no v2.DriverV2Controller, o resto serve as duas versoes
 @RestController
-@Tag(name = "Drivers", description = "Gerenciamento dos pilotos (Many-to-One com Team) - rotas da v1 e as que valem nas duas versoes")
+@Tag(name = "Pilotos", description = "Pilotos de Formula 1. Cada piloto corre por uma equipe (Many-to-One) e tem varios resultados. "
+        + "Aqui ficam as rotas da v1 e as que valem nas duas versoes (excluir, buscar pelo nome, pilotos de uma equipe e classificacao)")
 public class DriverController {
 
     // exemplos do Swagger: o POST cria um registro novo e o PUT altera o id 1, que ja existe
@@ -55,8 +56,9 @@ public class DriverController {
     }
 
     // GET /drivers - lista paginada, o Spring le o ?page=&size=&sort= da URL
-    @Operation(summary = "Get all drivers", description = "Lista paginada de todos os pilotos")
-    @ApiResponse(responseCode = "200", description = "Returned a paginated list of drivers")
+    @Operation(summary = "Lista os pilotos", description = "Lista paginada de todos os pilotos, cada um com a equipe completa. "
+            + "Use page, size e sort para navegar e ordenar (ex.: sort=number,asc)")
+    @ApiResponse(responseCode = "200", description = "Lista paginada de pilotos")
     @GetMapping(path = "/drivers", version = "1")
     public ResponseEntity<PagedModel<EntityModel<Driver>>> getAllDrivers(
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
@@ -65,27 +67,35 @@ public class DriverController {
     }
 
     // GET /drivers/{id} - se nao achar o service lanca a exception e vira 404
-    @Operation(summary = "Get a driver by its id", description = "Retorna um piloto com a equipe e os links HATEOAS")
-    @ApiResponse(responseCode = "200", description = "Returns a valid driver",
+    @Operation(summary = "Busca um piloto pelo id",
+            description = "Retorna o piloto com a equipe completa e os links para a equipe (team) e os resultados dele (results)")
+    @ApiResponse(responseCode = "200", description = "Piloto encontrado",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = Driver.class)))
-    @ApiResponse(responseCode = "404", description = "Driver not found", content = @Content)
-    @ApiResponse(responseCode = "400", description = "Invalid id", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Piloto nao encontrado - nao existe piloto com esse id "
+            + "(nunca foi criado ou ja foi excluido)", content = @Content)
+    @ApiResponse(responseCode = "400", description = "Id invalido - o id precisa ser um numero inteiro (ex.: 1); "
+            + "texto como abc e recusado", content = @Content)
     @GetMapping(path = "/drivers/{id}", version = "1")
-    public EntityModel<Driver> getDriverById(@Parameter(description = "Id of the driver", example = "1") @PathVariable Long id) {
+    public EntityModel<Driver> getDriverById(@Parameter(description = "Id do piloto", example = "1") @PathVariable Long id) {
         return assembler.toModel(service.findById(id));
     }
 
     // POST /drivers - o @RequestBody grandao e so doc do Swagger, o pequeno e que le o JSON
     // o @Valid roda as validacoes antes de entrar no metodo (400 se falhar)
-    @Operation(summary = "Creates a new driver", description = "A equipe e vinculada pelo id")
-    @ApiResponse(responseCode = "201", description = "Driver created; Location header points to the new resource")
-    @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Referenced team not found", content = @Content)
-    @ApiResponse(responseCode = "409", description = "Car number already in use", content = @Content)
+    @Operation(summary = "Cria um piloto", description = "Cadastra um piloto novo. A equipe e obrigatoria e vai pelo id "
+            + "(ex.: \"team\": { \"id\": 2 }); ela precisa existir antes. O numero do carro nao pode repetir entre os pilotos")
+    @ApiResponse(responseCode = "201", description = "Piloto criado; o header Location traz o endereco dele")
+    @ApiResponse(responseCode = "400", description = "Dados invalidos - name (3 a 100 caracteres), number (1 a 99), "
+            + "nationality (2 a 60), birthDate (data no passado, no formato AAAA-MM-DD), worldTitles (a partir de 0) e team "
+            + "sao obrigatorios. Tambem acontece com campo do tipo errado ou JSON mal formado; a resposta diz qual campo falhou e por que",
+            content = @Content)
+    @ApiResponse(responseCode = "404", description = "Equipe nao encontrada - o id informado em team nao existe; "
+            + "crie a equipe antes ou corrija o id", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Numero repetido - outro piloto ja usa esse numero de carro", content = @Content)
     @PostMapping(path = "/drivers", version = "1")
     public ResponseEntity<EntityModel<Driver>> newDriver(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "New driver",
+                    description = "Dados do piloto novo",
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = Driver.class),
@@ -101,17 +111,20 @@ public class DriverController {
     }
 
     // PUT /drivers/{id} - precisa mandar o JSON completo
-    @Operation(summary = "Updates a driver", description = "Substitui todos os dados do piloto. A equipe e vinculada pelo id")
-    @ApiResponse(responseCode = "200", description = "Driver updated",
+    @Operation(summary = "Atualiza um piloto", description = "Substitui todos os dados do piloto pelo que for enviado. "
+            + "Para trocar o piloto de equipe, mande o id da equipe nova em team. Os resultados dele nao mudam")
+    @ApiResponse(responseCode = "200", description = "Piloto atualizado",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = Driver.class)))
-    @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Driver or team not found", content = @Content)
-    @ApiResponse(responseCode = "409", description = "Car number already in use", content = @Content)
+    @ApiResponse(responseCode = "400", description = "Dados invalidos - o id nao e um numero inteiro, ou algum campo do JSON "
+            + "e invalido (mesmas regras do POST)", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Piloto ou equipe nao encontrado - nao existe piloto com esse id, "
+            + "ou o id informado em team nao existe", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Numero repetido - outro piloto ja usa esse numero de carro", content = @Content)
     @PutMapping(path = "/drivers/{id}", version = "1")
     public ResponseEntity<EntityModel<Driver>> updateDriver(
-            @Parameter(description = "Id of the driver", example = "1") @PathVariable Long id,
+            @Parameter(description = "Id do piloto", example = "1") @PathVariable Long id,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Updated driver",
+                    description = "Dados atualizados do piloto",
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = Driver.class),
@@ -122,45 +135,49 @@ public class DriverController {
     }
 
     // DELETE /drivers/{id} - sem versao, e igual na v1 e na v2
-    @Operation(summary = "Deletes a driver", description = "So e possivel excluir pilotos sem resultados registrados")
-    @ApiResponse(responseCode = "204", description = "Successfully deleted a driver", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Driver not found, maybe it's already deleted", content = @Content)
-    @ApiResponse(responseCode = "409", description = "Driver still has race results", content = @Content)
+    @Operation(summary = "Exclui um piloto", description = "Apaga o piloto. Vale nas duas versoes. So da para excluir piloto "
+            + "sem resultados: exclua os resultados dele antes, em DELETE /results/{id}")
+    @ApiResponse(responseCode = "204", description = "Piloto excluido", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Piloto nao encontrado - nao existe piloto com esse id "
+            + "(talvez ja tenha sido excluido)", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Piloto em uso - ele ainda tem resultados de corrida registrados", content = @Content)
     @DeleteMapping("/drivers/{id}")
-    public ResponseEntity<Void> deleteDriver(@Parameter(description = "Id of the driver (o 9 e o criado no POST de exemplo)", example = "9") @PathVariable Long id) {
+    public ResponseEntity<Void> deleteDriver(@Parameter(description = "Id do piloto (o 9 e o criado no POST de exemplo)", example = "9") @PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     // GET /drivers/search?name= - busca por parte do nome
-    @Operation(summary = "Search drivers by name", description = "Consulta personalizada: pilotos cujo nome contem o texto (sem diferenciar maiusculas)")
-    @ApiResponse(responseCode = "200", description = "Returned a paginated list of drivers")
+    @Operation(summary = "Busca pilotos pelo nome", description = "Consulta personalizada: pilotos cujo nome contem o texto informado, "
+            + "em qualquer parte e sem diferenciar maiusculas (lando encontra Lando Norris)")
+    @ApiResponse(responseCode = "200", description = "Lista paginada dos pilotos encontrados (vazia se nenhum nome bater)")
     @GetMapping("/drivers/search")
     public ResponseEntity<PagedModel<EntityModel<Driver>>> getDriversByName(
-            @Parameter(description = "Part of the driver's name", example = "lando") @RequestParam String name,
+            @Parameter(description = "Parte do nome do piloto", example = "lando") @RequestParam String name,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.searchByName(name, pageable), assembler));
     }
 
     // GET /drivers/team/{teamId} - pilotos de uma equipe
-    @Operation(summary = "Get drivers of a team", description = "Consulta personalizada: pilotos de uma equipe (One-to-Many)")
-    @ApiResponse(responseCode = "200", description = "Returned a paginated list of drivers of the team")
-    @ApiResponse(responseCode = "404", description = "Team not found", content = @Content)
+    @Operation(summary = "Lista os pilotos de uma equipe", description = "Consulta personalizada (One-to-Many): pilotos que correm pela equipe")
+    @ApiResponse(responseCode = "200", description = "Lista paginada dos pilotos da equipe")
+    @ApiResponse(responseCode = "404", description = "Equipe nao encontrada - nao existe equipe com esse id", content = @Content)
     @GetMapping("/drivers/team/{teamId}")
     public ResponseEntity<PagedModel<EntityModel<Driver>>> getDriversByTeam(
-            @Parameter(description = "Id of the team", example = "1") @PathVariable Long teamId,
+            @Parameter(description = "Id da equipe", example = "1") @PathVariable Long teamId,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.findByTeam(teamId, pageable), assembler));
     }
 
     // GET /drivers/standings - tabela do campeonato de pilotos
-    @Operation(summary = "Drivers' championship standings",
-            description = "Consulta personalizada: tabela do campeonato de pilotos, somando os pontos de todos os resultados, ordenada por pontos")
-    @ApiResponse(responseCode = "200", description = "Returned the paginated standings table")
+    @Operation(summary = "Classificacao de pilotos", description = "Consulta personalizada: tabela do campeonato de pilotos. "
+            + "Soma os pontos de todos os resultados de cada piloto e ordena do maior para o menor; cada linha traz a posicao "
+            + "e um link para o piloto (driver). A ordem e sempre por pontos, por isso a rota nao tem sort")
+    @ApiResponse(responseCode = "200", description = "Tabela de classificacao paginada")
     // a tabela sempre ordena por pontos, entao no swagger so aparecem page e size (o sort seria ignorado)
-    @Parameter(name = "page", in = ParameterIn.QUERY, description = "Zero-based page index (0..N)",
+    @Parameter(name = "page", in = ParameterIn.QUERY, description = "Numero da pagina, comecando em 0",
             schema = @Schema(type = "integer", defaultValue = "0"))
-    @Parameter(name = "size", in = ParameterIn.QUERY, description = "The size of the page to be returned",
+    @Parameter(name = "size", in = ParameterIn.QUERY, description = "Quantos registros por pagina",
             schema = @Schema(type = "integer", defaultValue = "10"))
     @GetMapping("/drivers/standings")
     public ResponseEntity<PagedModel<EntityModel<Standing>>> getDriverStandings(

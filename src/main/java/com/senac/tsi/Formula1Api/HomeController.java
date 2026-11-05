@@ -13,12 +13,14 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 // porta de entrada da API, daqui da pra navegar por tudo seguindo os links
 @RestController
-@Tag(name = "Home", description = "Ponto de entrada da API")
+@Tag(name = "Inicio", description = "Porta de entrada da API")
 public class HomeController {
 
     // GET / - nao devolve dado nenhum, so os links pras listas e pras tabelas
-    @Operation(summary = "API entry point", description = "Retorna links HATEOAS para todos os recursos")
-    @ApiResponse(responseCode = "200", description = "Links to every resource collection")
+    @Operation(summary = "Porta de entrada da API", description = "Retorna os links para todas as colecoes da API "
+            + "(equipes, chefes, pilotos, patrocinadores, resultados, classificacoes e chaves). "
+            + "E o ponto de partida do HATEOAS: daqui o cliente chega em tudo seguindo os links")
+    @ApiResponse(responseCode = "200", description = "Links para todas as colecoes")
     @GetMapping("/")
     public RepresentationModel<?> index() {
         return new RepresentationModel<>()

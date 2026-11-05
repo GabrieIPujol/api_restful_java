@@ -14,7 +14,7 @@ import java.util.Objects;
 public class RaceResult {
     // id gerado pelo banco
     private @Id
-    @GeneratedValue long id;
+    @GeneratedValue @Schema(example = "1") long id;
 
     // validacoes rodam no @Valid, se falhar volta 400
     @NotBlank

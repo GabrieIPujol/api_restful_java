@@ -15,7 +15,7 @@ import java.util.Objects;
 public class Driver {
     // id gerado pelo banco, por isso nao precisa mandar no POST
     private @Id
-    @GeneratedValue long id;
+    @GeneratedValue @Schema(example = "1") long id;
 
     // as validacoes rodam no @Valid do controller, se falhar volta 400
     @NotBlank

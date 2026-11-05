@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.*;
 
 // endpoints dos chefes de equipe, mesmo molde do DriverController
 @RestController
-@Tag(name = "Team Principals", description = "Gerenciamento dos chefes de equipe (relacionamento One-to-One com Team)")
+@Tag(name = "Chefes de equipe", description = "Chefes de equipe (Team Principals). Cada equipe tem no maximo um chefe "
+        + "e cada chefe comanda no maximo uma equipe (One-to-One)")
 public class TeamPrincipalController {
 
     // exemplos do Swagger: o POST cria um registro novo e o PUT altera o id 1, que ja existe
@@ -45,8 +46,9 @@ public class TeamPrincipalController {
     }
 
     // GET /principals - lista paginada
-    @Operation(summary = "Get all team principals", description = "Lista paginada de todos os chefes de equipe")
-    @ApiResponse(responseCode = "200", description = "Returned a paginated list of team principals")
+    @Operation(summary = "Lista os chefes de equipe", description = "Lista paginada de todos os chefes, cada um com a equipe que comanda. "
+            + "Use page, size e sort para navegar e ordenar (ex.: sort=since,desc)")
+    @ApiResponse(responseCode = "200", description = "Lista paginada de chefes de equipe")
     @GetMapping("/principals")
     public ResponseEntity<PagedModel<EntityModel<TeamPrincipal>>> getAllPrincipals(
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
@@ -54,26 +56,34 @@ public class TeamPrincipalController {
     }
 
     // GET /principals/{id} - 404 se nao achar
-    @Operation(summary = "Get a team principal by its id", description = "Retorna um chefe de equipe com a equipe e os links HATEOAS")
-    @ApiResponse(responseCode = "200", description = "Returns a valid team principal",
+    @Operation(summary = "Busca um chefe de equipe pelo id",
+            description = "Retorna o chefe com a equipe que ele comanda e o link para ela (team)")
+    @ApiResponse(responseCode = "200", description = "Chefe de equipe encontrado",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = TeamPrincipal.class)))
-    @ApiResponse(responseCode = "404", description = "Team principal not found", content = @Content)
-    @ApiResponse(responseCode = "400", description = "Invalid id", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Chefe nao encontrado - nao existe chefe com esse id "
+            + "(nunca foi criado ou ja foi excluido)", content = @Content)
+    @ApiResponse(responseCode = "400", description = "Id invalido - o id precisa ser um numero inteiro (ex.: 1); "
+            + "texto como abc e recusado", content = @Content)
     @GetMapping("/principals/{id}")
-    public EntityModel<TeamPrincipal> getPrincipalById(@Parameter(description = "Id of the team principal", example = "1") @PathVariable Long id) {
+    public EntityModel<TeamPrincipal> getPrincipalById(@Parameter(description = "Id do chefe de equipe", example = "1") @PathVariable Long id) {
         return assembler.toModel(service.findById(id));
     }
 
     // POST /principals - se a equipe ja tiver chefe o banco barra e volta 409
-    @Operation(summary = "Creates a new team principal", description = "A equipe e vinculada pelo id; cada equipe so pode ter um chefe (One-to-One). Nos dados iniciais as 4 equipes ja tem chefe, entao crie uma antes no POST /teams (ela vira o id 5)")
-    @ApiResponse(responseCode = "201", description = "Team principal created; Location header points to the new resource")
-    @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Referenced team not found", content = @Content)
-    @ApiResponse(responseCode = "409", description = "The team already has a principal", content = @Content)
+    @Operation(summary = "Cria um chefe de equipe", description = "Cadastra um chefe novo. A equipe vai pelo id "
+            + "(ex.: \"team\": { \"id\": 5 }) e e opcional: sem ela o chefe fica sem equipe. Cada equipe so pode ter um chefe, "
+            + "e nos dados iniciais as 4 equipes ja tem, entao crie uma equipe antes no POST /teams (ela vira o id 5)")
+    @ApiResponse(responseCode = "201", description = "Chefe criado; o header Location traz o endereco dele")
+    @ApiResponse(responseCode = "400", description = "Dados invalidos - name (3 a 100 caracteres), nationality (2 a 60) "
+            + "e since (ano entre 1950 e 2100) sao obrigatorios. Tambem acontece com campo do tipo errado ou JSON mal formado; "
+            + "a resposta diz qual campo falhou e por que", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Equipe nao encontrada - o id informado em team nao existe; "
+            + "crie a equipe antes ou corrija o id", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Equipe ja tem chefe - escolha outra equipe ou exclua o chefe atual dela antes", content = @Content)
     @PostMapping("/principals")
     public ResponseEntity<EntityModel<TeamPrincipal>> newPrincipal(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "New team principal",
+                    description = "Dados do chefe novo",
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = TeamPrincipal.class),
@@ -88,17 +98,20 @@ public class TeamPrincipalController {
     }
 
     // PUT /principals/{id}
-    @Operation(summary = "Updates a team principal", description = "Substitui todos os dados do chefe. A equipe e vinculada pelo id e nao pode ter outro chefe")
-    @ApiResponse(responseCode = "200", description = "Team principal updated",
+    @Operation(summary = "Atualiza um chefe de equipe", description = "Substitui todos os dados do chefe pelo que for enviado. "
+            + "Para trocar de equipe, mande o id da equipe nova em team (ela nao pode ter outro chefe); sem team, o chefe fica sem equipe")
+    @ApiResponse(responseCode = "200", description = "Chefe de equipe atualizado",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = TeamPrincipal.class)))
-    @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Team principal or team not found", content = @Content)
-    @ApiResponse(responseCode = "409", description = "The team already has another principal", content = @Content)
+    @ApiResponse(responseCode = "400", description = "Dados invalidos - o id nao e um numero inteiro, ou algum campo do JSON "
+            + "e invalido (mesmas regras do POST)", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Chefe ou equipe nao encontrado - nao existe chefe com esse id, "
+            + "ou o id informado em team nao existe", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Equipe ja tem chefe - a equipe informada ja e comandada por outro chefe", content = @Content)
     @PutMapping("/principals/{id}")
     public ResponseEntity<EntityModel<TeamPrincipal>> updatePrincipal(
-            @Parameter(description = "Id of the team principal", example = "1") @PathVariable Long id,
+            @Parameter(description = "Id do chefe de equipe", example = "1") @PathVariable Long id,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Updated team principal",
+                    description = "Dados atualizados do chefe",
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = TeamPrincipal.class),
@@ -109,33 +122,37 @@ public class TeamPrincipalController {
     }
 
     // DELETE /principals/{id} - o vinculo com a equipe e desfeito antes
-    @Operation(summary = "Deletes a team principal", description = "Remove o chefe e desfaz o vinculo com a equipe")
-    @ApiResponse(responseCode = "204", description = "Successfully deleted a team principal", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Team principal not found, maybe it's already deleted", content = @Content)
+    @Operation(summary = "Exclui um chefe de equipe", description = "Apaga o chefe e desfaz o vinculo com a equipe, "
+            + "que continua existindo e fica livre para receber outro chefe")
+    @ApiResponse(responseCode = "204", description = "Chefe excluido", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Chefe nao encontrado - nao existe chefe com esse id "
+            + "(talvez ja tenha sido excluido)", content = @Content)
     @DeleteMapping("/principals/{id}")
-    public ResponseEntity<Void> deletePrincipal(@Parameter(description = "Id of the team principal (o 5 e o criado no POST de exemplo)", example = "5") @PathVariable Long id) {
+    public ResponseEntity<Void> deletePrincipal(@Parameter(description = "Id do chefe de equipe (o 5 e o criado no POST de exemplo)", example = "5") @PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     // GET /principals/search?nationality= - chefes de uma nacionalidade
-    @Operation(summary = "Search team principals by nationality", description = "Consulta personalizada: chefes de equipe de uma nacionalidade (sem diferenciar maiusculas)")
-    @ApiResponse(responseCode = "200", description = "Returned a paginated list of team principals")
+    @Operation(summary = "Busca chefes pela nacionalidade", description = "Consulta personalizada: chefes de uma nacionalidade. "
+            + "A nacionalidade precisa ser completa, mas maiusculas e minusculas nao importam (italian encontra Italian)")
+    @ApiResponse(responseCode = "200", description = "Lista paginada dos chefes dessa nacionalidade (vazia se nenhum for)")
     @GetMapping("/principals/search")
     public ResponseEntity<PagedModel<EntityModel<TeamPrincipal>>> getPrincipalsByNationality(
-            @Parameter(description = "Nationality", example = "Italian") @RequestParam String nationality,
+            @Parameter(description = "Nacionalidade, completa e em ingles", example = "Italian") @RequestParam String nationality,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.searchByNationality(nationality, pageable), assembler));
     }
 
     // GET /principals/team/{teamId} - o chefe de uma equipe, volta um so e nao uma pagina
-    @Operation(summary = "Get the principal of a team", description = "Consulta personalizada: chefe de uma equipe (One-to-One)")
-    @ApiResponse(responseCode = "200", description = "Returns the team principal",
+    @Operation(summary = "Busca o chefe de uma equipe", description = "Consulta personalizada (One-to-One): o chefe que comanda a equipe")
+    @ApiResponse(responseCode = "200", description = "Chefe da equipe",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = TeamPrincipal.class)))
-    @ApiResponse(responseCode = "404", description = "Team not found or team has no principal", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Equipe nao encontrada ou sem chefe - nao existe equipe com esse id, "
+            + "ou ela ainda nao tem chefe", content = @Content)
     @GetMapping("/principals/team/{teamId}")
     public ResponseEntity<EntityModel<TeamPrincipal>> getPrincipalByTeam(
-            @Parameter(description = "Id of the team", example = "1") @PathVariable Long teamId) {
+            @Parameter(description = "Id da equipe", example = "1") @PathVariable Long teamId) {
         return ResponseEntity.ok(assembler.toModel(service.findByTeam(teamId)));
     }
 }

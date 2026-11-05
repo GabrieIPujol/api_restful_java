@@ -30,7 +30,9 @@ import java.net.URI;
 // do DriverController servem as duas versoes. a regra de negocio e a mesma da v1, as duas usam o DriverService
 @RestController
 @RequestMapping("/drivers")
-@Tag(name = "Drivers v2", description = "Gerenciamento dos pilotos - versao 2 (mande o header API-Version: 2)")
+@Tag(name = "Pilotos v2", description = "Pilotos na versao 2, pedida com o header API-Version: 2. Muda o formato: "
+        + "a equipe vai pelo campo teamId e volta resumida (so id e nome), a idade vem calculada e a resposta nao tem _links. "
+        + "Excluir, buscar pelo nome, pilotos de uma equipe e classificacao sao iguais nas duas versoes e ficam no grupo Pilotos")
 public class DriverV2Controller {
 
     // exemplos do Swagger: o POST cria um piloto novo e o PUT altera o piloto 1, que ja existe
@@ -49,8 +51,9 @@ public class DriverV2Controller {
     }
 
     // GET /drivers (v2) - lista paginada, com content e page no lugar do _embedded
-    @Operation(summary = "Get all drivers (v2)", description = "Lista paginada de pilotos no formato da v2")
-    @ApiResponse(responseCode = "200", description = "Returned a page of drivers")
+    @Operation(summary = "Lista os pilotos (v2)", description = "Lista paginada de todos os pilotos no formato da v2: "
+            + "equipe resumida e idade calculada, sem _links")
+    @ApiResponse(responseCode = "200", description = "Pagina de pilotos no formato da v2")
     @GetMapping(version = "2")
     public PagedModel<DriverResponse> getAllDrivers(
             @ParameterObject @PageableDefault(size = 10, sort = "id") Pageable pageable) {
@@ -58,24 +61,31 @@ public class DriverV2Controller {
     }
 
     // GET /drivers/{id} (v2)
-    @Operation(summary = "Get a driver by its id (v2)", description = "Retorna o piloto no formato da v2, com a idade e a equipe resumida")
-    @ApiResponse(responseCode = "200", description = "Returns the driver")
-    @ApiResponse(responseCode = "404", description = "Driver not found", content = @Content)
+    @Operation(summary = "Busca um piloto pelo id (v2)", description = "Retorna o piloto no formato da v2: "
+            + "a idade calculada a partir de birthDate e a equipe resumida (id e nome)")
+    @ApiResponse(responseCode = "200", description = "Piloto encontrado")
+    @ApiResponse(responseCode = "404", description = "Piloto nao encontrado - nao existe piloto com esse id "
+            + "(nunca foi criado ou ja foi excluido)", content = @Content)
     @GetMapping(path = "/{id}", version = "2")
-    public DriverResponse getDriverById(@Parameter(description = "Id of the driver", example = "1") @PathVariable Long id) {
+    public DriverResponse getDriverById(@Parameter(description = "Id do piloto", example = "1") @PathVariable Long id) {
         return DriverResponse.from(service.findById(id));
     }
 
     // POST /drivers (v2) - 201 com o header Location
-    @Operation(summary = "Creates a new driver (v2)", description = "A equipe vai pelo campo teamId")
-    @ApiResponse(responseCode = "201", description = "Returns the new driver")
-    @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Referenced team not found", content = @Content)
-    @ApiResponse(responseCode = "409", description = "Car number already in use", content = @Content)
+    @Operation(summary = "Cria um piloto (v2)", description = "Cadastra um piloto novo. Na v2 a equipe vai pelo campo teamId "
+            + "(ex.: \"teamId\": 1) em vez do objeto team, e precisa existir antes. O numero do carro nao pode repetir")
+    @ApiResponse(responseCode = "201", description = "Piloto criado; o header Location traz o endereco dele")
+    @ApiResponse(responseCode = "400", description = "Dados invalidos - name (3 a 100 caracteres), number (1 a 99), "
+            + "nationality (2 a 60), birthDate (data no passado, AAAA-MM-DD), worldTitles (a partir de 0) e teamId "
+            + "sao obrigatorios. Tambem acontece com campo do tipo errado ou JSON mal formado; "
+            + "a resposta diz qual campo falhou e por que", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Equipe nao encontrada - o teamId informado nao existe; "
+            + "crie a equipe antes ou corrija o id", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Numero repetido - outro piloto ja usa esse numero de carro", content = @Content)
     @PostMapping(version = "2")
     public ResponseEntity<DriverResponse> newDriver(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "New driver",
+                    description = "Dados do piloto novo",
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = DriverRequest.class),
@@ -91,16 +101,19 @@ public class DriverV2Controller {
     }
 
     // PUT /drivers/{id} (v2) - precisa mandar o JSON completo
-    @Operation(summary = "Updates a driver (v2)", description = "Substitui todos os dados do piloto. A equipe vai pelo campo teamId")
-    @ApiResponse(responseCode = "200", description = "Returns the updated driver")
-    @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Driver or team not found", content = @Content)
-    @ApiResponse(responseCode = "409", description = "Car number already in use", content = @Content)
+    @Operation(summary = "Atualiza um piloto (v2)", description = "Substitui todos os dados do piloto pelo que for enviado. "
+            + "Para trocar de equipe, mande o id da equipe nova em teamId")
+    @ApiResponse(responseCode = "200", description = "Piloto atualizado")
+    @ApiResponse(responseCode = "400", description = "Dados invalidos - o id nao e um numero inteiro, ou algum campo do JSON "
+            + "e invalido (mesmas regras do POST)", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Piloto ou equipe nao encontrado - nao existe piloto com esse id, "
+            + "ou o teamId informado nao existe", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Numero repetido - outro piloto ja usa esse numero de carro", content = @Content)
     @PutMapping(path = "/{id}", version = "2")
     public DriverResponse updateDriver(
-            @Parameter(description = "Id of the driver", example = "1") @PathVariable Long id,
+            @Parameter(description = "Id do piloto", example = "1") @PathVariable Long id,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Updated driver",
+                    description = "Dados atualizados do piloto",
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = DriverRequest.class),

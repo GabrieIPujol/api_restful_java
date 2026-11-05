@@ -8,6 +8,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -193,6 +194,18 @@ class Part2FeaturesTests {
                 .andExpect(jsonPath("$.title").value("Bad Request"))
                 .andExpect(jsonPath("$.errors.number").exists())
                 .andExpect(jsonPath("$.errors.name").exists());
+    }
+
+    @Test
+    void swaggerGroupsFollowTheCreationOrder() throws Exception {
+        // se renomear um @Tag e esquecer do OpenApi.TAG_ORDER, o grupo sai do lugar e este teste pega
+        String v2 = mvc.perform(get("/v3/api-docs/v2")).andReturn().getResponse().getContentAsString();
+        assertEquals(OpenApi.TAG_ORDER, JsonPath.read(v2, "$.tags[*].name"));
+
+        // a v1 nao tem o grupo Pilotos v2, o resto segue a mesma ordem
+        String v1 = mvc.perform(get("/v3/api-docs/v1")).andReturn().getResponse().getContentAsString();
+        assertEquals(OpenApi.TAG_ORDER.stream().filter(name -> !name.equals("Pilotos v2")).toList(),
+                JsonPath.read(v1, "$.tags[*].name"));
     }
 
     @Test

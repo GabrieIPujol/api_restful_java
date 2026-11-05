@@ -16,7 +16,7 @@ import java.util.Set;
 public class Team {
     // id gerado pelo banco, por isso nao precisa mandar no POST
     private @Id
-    @GeneratedValue long id;
+    @GeneratedValue @Schema(example = "1") long id;
 
     // validacoes rodam no @Valid (400 se falhar), o unique e do banco (nome repetido da 409)
     @NotBlank

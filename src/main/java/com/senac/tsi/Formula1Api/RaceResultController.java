@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.*;
 
 // endpoints dos resultados, mesmo molde do DriverController
 @RestController
-@Tag(name = "Race Results", description = "Gerenciamento dos resultados de corrida, base para a pontuacao e as tabelas de classificacao")
+@Tag(name = "Resultados", description = "Resultados de corrida: a posicao e os pontos de um piloto em um Grande Premio. "
+        + "Sao a base das classificacoes, entao criar, alterar ou excluir um resultado muda as tabelas na hora")
 public class RaceResultController {
 
     // exemplos do Swagger: o POST cria um registro novo e o PUT altera o id 1, que ja existe
@@ -47,8 +48,9 @@ public class RaceResultController {
     }
 
     // GET /results - lista paginada
-    @Operation(summary = "Get all race results", description = "Lista paginada de todos os resultados")
-    @ApiResponse(responseCode = "200", description = "Returned a paginated list of race results")
+    @Operation(summary = "Lista os resultados", description = "Lista paginada de todos os resultados, cada um com o piloto. "
+            + "Use page, size e sort para navegar e ordenar (ex.: sort=raceDate,desc)")
+    @ApiResponse(responseCode = "200", description = "Lista paginada de resultados")
     @GetMapping("/results")
     public ResponseEntity<PagedModel<EntityModel<RaceResult>>> getAllResults(
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
@@ -56,25 +58,34 @@ public class RaceResultController {
     }
 
     // GET /results/{id} - 404 se nao achar
-    @Operation(summary = "Get a race result by its id", description = "Retorna um resultado com o piloto e os links HATEOAS")
-    @ApiResponse(responseCode = "200", description = "Returns a valid race result",
+    @Operation(summary = "Busca um resultado pelo id",
+            description = "Retorna o resultado com o piloto e o link para ele (driver)")
+    @ApiResponse(responseCode = "200", description = "Resultado encontrado",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = RaceResult.class)))
-    @ApiResponse(responseCode = "404", description = "Race result not found", content = @Content)
-    @ApiResponse(responseCode = "400", description = "Invalid id", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Resultado nao encontrado - nao existe resultado com esse id "
+            + "(nunca foi criado ou ja foi excluido)", content = @Content)
+    @ApiResponse(responseCode = "400", description = "Id invalido - o id precisa ser um numero inteiro (ex.: 1); "
+            + "texto como abc e recusado", content = @Content)
     @GetMapping("/results/{id}")
-    public EntityModel<RaceResult> getResultById(@Parameter(description = "Id of the race result", example = "1") @PathVariable Long id) {
+    public EntityModel<RaceResult> getResultById(@Parameter(description = "Id do resultado", example = "1") @PathVariable Long id) {
         return assembler.toModel(service.findById(id));
     }
 
     // POST /results - registra uma corrida e os pontos ja entram na tabela
-    @Operation(summary = "Creates a new race result", description = "O piloto e vinculado pelo id; os pontos entram nas tabelas de classificacao")
-    @ApiResponse(responseCode = "201", description = "Race result created; Location header points to the new resource")
-    @ApiResponse(responseCode = "400", description = "Bad request on the payload (ex.: status fora de FINISHED, DNF, DSQ)", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Referenced driver not found", content = @Content)
+    @Operation(summary = "Cria um resultado", description = "Registra o resultado de um piloto em uma corrida. O piloto vai pelo id "
+            + "(ex.: \"driver\": { \"id\": 1 }) e precisa existir antes. Os pontos ja entram na classificacao de pilotos "
+            + "e na de construtores (pela equipe do piloto)")
+    @ApiResponse(responseCode = "201", description = "Resultado criado; o header Location traz o endereco dele")
+    @ApiResponse(responseCode = "400", description = "Dados invalidos - raceName e circuit (3 a 100 caracteres), "
+            + "raceDate (formato AAAA-MM-DD), position (1 a 30), points (0 a 26), status e driver sao obrigatorios; "
+            + "status so aceita FINISHED (terminou), DNF (abandonou) ou DSQ (desclassificado). Tambem acontece com campo "
+            + "do tipo errado ou JSON mal formado; a resposta diz qual campo falhou e por que", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Piloto nao encontrado - o id informado em driver nao existe; "
+            + "crie o piloto antes ou corrija o id", content = @Content)
     @PostMapping("/results")
     public ResponseEntity<EntityModel<RaceResult>> newResult(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "New race result",
+                    description = "Dados do resultado novo",
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = RaceResult.class),
@@ -89,16 +100,19 @@ public class RaceResultController {
     }
 
     // PUT /results/{id} - da pra usar pra corrigir os pontos de uma corrida
-    @Operation(summary = "Updates a race result", description = "Substitui todos os dados do resultado; a mudanca nos pontos ja aparece nas tabelas de classificacao")
-    @ApiResponse(responseCode = "200", description = "Race result updated",
+    @Operation(summary = "Atualiza um resultado", description = "Substitui todos os dados do resultado pelo que for enviado. "
+            + "Se os pontos ou o piloto mudarem, as classificacoes ja mostram a diferenca")
+    @ApiResponse(responseCode = "200", description = "Resultado atualizado",
             content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = RaceResult.class)))
-    @ApiResponse(responseCode = "400", description = "Bad request on the payload", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Race result or driver not found", content = @Content)
+    @ApiResponse(responseCode = "400", description = "Dados invalidos - o id nao e um numero inteiro, ou algum campo do JSON "
+            + "e invalido (mesmas regras do POST)", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Resultado ou piloto nao encontrado - nao existe resultado com esse id, "
+            + "ou o id informado em driver nao existe", content = @Content)
     @PutMapping("/results/{id}")
     public ResponseEntity<EntityModel<RaceResult>> updateResult(
-            @Parameter(description = "Id of the race result", example = "1") @PathVariable Long id,
+            @Parameter(description = "Id do resultado", example = "1") @PathVariable Long id,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Updated race result",
+                    description = "Dados atualizados do resultado",
                     required = true,
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = RaceResult.class),
@@ -109,43 +123,49 @@ public class RaceResultController {
     }
 
     // DELETE /results/{id}
-    @Operation(summary = "Deletes a race result", description = "Remove o resultado e os pontos dele saem das tabelas de classificacao")
-    @ApiResponse(responseCode = "204", description = "Successfully deleted a race result", content = @Content)
-    @ApiResponse(responseCode = "404", description = "Race result not found, maybe it's already deleted", content = @Content)
+    @Operation(summary = "Exclui um resultado", description = "Apaga o resultado, e os pontos dele saem das classificacoes na hora. "
+            + "E o passo necessario antes de excluir um piloto")
+    @ApiResponse(responseCode = "204", description = "Resultado excluido", content = @Content)
+    @ApiResponse(responseCode = "404", description = "Resultado nao encontrado - nao existe resultado com esse id "
+            + "(talvez ja tenha sido excluido)", content = @Content)
     @DeleteMapping("/results/{id}")
-    public ResponseEntity<Void> deleteResult(@Parameter(description = "Id of the race result (o 17 e o criado no POST de exemplo)", example = "17") @PathVariable Long id) {
+    public ResponseEntity<Void> deleteResult(@Parameter(description = "Id do resultado (o 17 e o criado no POST de exemplo)", example = "17") @PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     // GET /results/status/{status} - filtra pelo enum, valor invalido volta 400
-    @Operation(summary = "Get race results by status", description = "Consulta personalizada: resultados filtrados pelo enum ResultStatus (ex.: todos os abandonos - DNF)")
-    @ApiResponse(responseCode = "200", description = "Returned a paginated list of race results")
-    @ApiResponse(responseCode = "400", description = "Invalid status", content = @Content)
+    @Operation(summary = "Lista os resultados por status", description = "Consulta personalizada: resultados com um status do enum "
+            + "ResultStatus - FINISHED (terminou), DNF (abandonou) ou DSQ (desclassificado). Ex.: DNF lista todos os abandonos")
+    @ApiResponse(responseCode = "200", description = "Lista paginada dos resultados com esse status")
+    @ApiResponse(responseCode = "400", description = "Status invalido - use FINISHED, DNF ou DSQ, em maiusculas", content = @Content)
     @GetMapping("/results/status/{status}")
     public ResponseEntity<PagedModel<EntityModel<RaceResult>>> getResultsByStatus(
-            @Parameter(description = "Status of the result", example = "DNF") @PathVariable ResultStatus status,
+            @Parameter(description = "Status do resultado: FINISHED, DNF ou DSQ", example = "DNF") @PathVariable ResultStatus status,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable) {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.findByStatus(status, pageable), assembler));
     }
 
     // GET /results/search?race= - resultados de um GP, ordenados pela posicao
-    @Operation(summary = "Search race results by race name", description = "Consulta personalizada: resultados de um Grande Premio, ordenados pela posicao")
-    @ApiResponse(responseCode = "200", description = "Returned a paginated list of race results")
+    @Operation(summary = "Busca resultados pela corrida", description = "Consulta personalizada: resultados das corridas cujo nome "
+            + "contem o texto, em qualquer parte e sem diferenciar maiusculas (australian encontra Australian Grand Prix). "
+            + "Sem sort, vem ordenado pela posicao, como o grid de chegada")
+    @ApiResponse(responseCode = "200", description = "Lista paginada dos resultados da corrida (vazia se nenhum nome bater)")
     @GetMapping("/results/search")
     public ResponseEntity<PagedModel<EntityModel<RaceResult>>> getResultsByRace(
-            @Parameter(description = "Part of the race name", example = "australian") @RequestParam String race,
+            @Parameter(description = "Parte do nome da corrida", example = "australian") @RequestParam String race,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "position") Pageable pageable) {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.searchByRace(race, pageable), assembler));
     }
 
     // GET /results/driver/{driverId} - historico do piloto, ordenado pela data
-    @Operation(summary = "Get race results of a driver", description = "Consulta personalizada: historico de resultados de um piloto")
-    @ApiResponse(responseCode = "200", description = "Returned a paginated list of race results of the driver")
-    @ApiResponse(responseCode = "404", description = "Driver not found", content = @Content)
+    @Operation(summary = "Lista os resultados de um piloto", description = "Consulta personalizada (One-to-Many): historico de corridas "
+            + "do piloto. Sem sort, vem em ordem de data")
+    @ApiResponse(responseCode = "200", description = "Lista paginada dos resultados do piloto")
+    @ApiResponse(responseCode = "404", description = "Piloto nao encontrado - nao existe piloto com esse id", content = @Content)
     @GetMapping("/results/driver/{driverId}")
     public ResponseEntity<PagedModel<EntityModel<RaceResult>>> getResultsByDriver(
-            @Parameter(description = "Id of the driver", example = "1") @PathVariable Long driverId,
+            @Parameter(description = "Id do piloto", example = "1") @PathVariable Long driverId,
             @ParameterObject @PageableDefault(size = 10, page = 0, sort = "raceDate") Pageable pageable) {
         return ResponseEntity.ok(pagedResourcesAssembler.toModel(service.findByDriver(driverId, pageable), assembler));
     }

@@ -16,7 +16,7 @@ import java.util.Set;
 public class Sponsor {
     // id gerado pelo banco
     private @Id
-    @GeneratedValue long id;
+    @GeneratedValue @Schema(example = "1") long id;
 
     // validacoes rodam no @Valid (400), o unique e do banco (nome repetido da 409)
     @NotBlank
