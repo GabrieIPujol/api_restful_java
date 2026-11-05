@@ -8,7 +8,7 @@ Todas as mudanças da Formula 1 API ficam registradas aqui. As versões seguem o
 - A API aceitava e devolvia YAML sem querer: a biblioteca de YAML vem junto com o Swagger, e o Spring passava a usá-la sozinho. Agora ela só fala JSON: um corpo em YAML ou XML recebe **415**, e pedir a resposta em YAML recebe **406**.
 
 ### Alterado
-- Descrição do Swagger: explica como a API usa o HATEOAS e a idempotência, e mostra os planos numa tabela.
+- Descrição do Swagger: explica como a API usa o HATEOAS e a idempotência, mostra os planos numa tabela e explica como o limite funciona (janela de 1 minuto, o que conta, como acompanhar pelos headers e o que acontece ao passar dele).
 - Toda a documentação das rotas no Swagger está em português: cada rota explica o processo (como liga os relacionamentos, as regras e o efeito nos outros dados) e cada erro diz o motivo exato. Os grupos também foram traduzidos (Equipes, Pilotos, Pilotos v2...).
 - Cada erro documentado no Swagger mostra um exemplo do JSON que a API devolve (pplication/problem+json), com a mensagem real da rota, e as respostas mostram os headers: limite do plano no sucesso, Location e Idempotent-Replayed no 201, Retry-After no 429 e Deprecation/Sunset na v1 dos pilotos. Os exemplos de sucesso usam valores realistas.
 - O \GET /\ agora se apresenta (nome, versão e uma frase de orientação) e tem links para a documentação (\docs\), os termos e a licença.

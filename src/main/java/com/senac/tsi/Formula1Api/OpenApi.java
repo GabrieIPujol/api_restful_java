@@ -78,13 +78,23 @@ public class OpenApi {
                                 "(por exemplo, a internet caiu e o cliente reenviou). Mande no POST o header `Idempotency-Key` " +
                                 "com um codigo unico. Se chegar outro POST com o mesmo codigo, a API nao cria de novo: " +
                                 "devolve a resposta da primeira vez.\n\n" +
-                                "**Planos (rate limit):** cada plano tem um limite de requisicoes por minuto. Passou dele, a resposta e `429`, " +
-                                "e o header `Retry-After` diz em quantos segundos tentar de novo. O header `X-Rate-Limit-Limit` mostra o limite do seu plano.\n\n" +
+                                "**Planos (rate limit):** cada plano pode fazer um numero de requisicoes por minuto, " +
+                                "e o plano e escolhido pela chave enviada no `X-API-Key`.\n\n" +
                                 "| Plano | Como acessar | O que pode | Limite por minuto | Contado por |\n" +
                                 "|---|---|---|---|---|\n" +
                                 "| Visitante | Sem chave | Ler os dados (GET) | " + visitorLimit + " | IP |\n" +
                                 "| USER | Chave USER no `X-API-Key` | Ler e alterar os dados (POST, PUT, DELETE) | " + userLimit + " | Chave |\n" +
                                 "| ADMIN | Chave ADMIN no `X-API-Key` | Tudo isso e gerenciar as chaves em `/api-keys` | " + adminLimit + " | Chave |\n\n" +
+                                "Como funciona:\n\n" +
+                                "- **janela de 1 minuto:** o limite volta inteiro de uma vez a cada minuto, contado a partir da sua primeira requisicao;\n" +
+                                "- **o que conta:** toda requisicao para a API, inclusive as que dao erro. A documentacao (Swagger), " +
+                                "o console do H2 e o preflight do CORS (OPTIONS) nao contam;\n" +
+                                "- **quem conta:** sem chave, o limite e dividido por IP; com chave, e da chave e vale em qualquer IP. " +
+                                "Chave invalida cai no limite de visitante e ainda recebe `401`;\n" +
+                                "- **como acompanhar:** toda resposta traz `X-Rate-Limit-Limit` (o limite do seu plano) e " +
+                                "`X-Rate-Limit-Remaining` (quantas requisicoes ainda restam neste minuto);\n" +
+                                "- **passou do limite:** a resposta e `429`, e o header `Retry-After` diz em quantos segundos tentar de novo. " +
+                                "A requisicao barrada nao gasta nada do proximo minuto.\n\n" +
                                 "**Versoes:** escolha no seletor acima. A v2 muda os pilotos e e pedida com o header `API-Version: 2`.")
                         // as duas paginas ficam em src/main/resources/static, o proprio spring serve elas
                         .termsOfService("/terms.html")
