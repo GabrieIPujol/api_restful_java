@@ -1,6 +1,7 @@
 package com.senac.tsi.Formula1Api;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Pageable;
@@ -16,14 +17,31 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @Tag(name = "Inicio", description = "Porta de entrada da API")
 public class HomeController {
 
-    // GET / - nao devolve dado nenhum, so os links pras listas e pras tabelas
-    @Operation(summary = "Porta de entrada da API", description = "Retorna os links para todas as colecoes da API "
+    // o que vem no corpo do GET /, alem dos links: quem chega aqui ja entende o que e a api e por onde seguir
+    @Schema(description = "Apresentacao da API")
+    public static class Home extends RepresentationModel<Home> {
+        @Schema(example = "Formula 1 API")
+        public final String name = "Formula 1 API";
+        @Schema(example = OpenApi.VERSION)
+        public final String version = OpenApi.VERSION;
+        @Schema(example = "API de Formula 1: equipes, chefes de equipe, pilotos, patrocinadores, resultados e classificacoes...")
+        public final String description = "API de Formula 1: equipes, chefes de equipe, pilotos, patrocinadores, resultados "
+                + "e classificacoes. Siga os links abaixo para navegar; a documentacao completa esta no link docs. "
+                + "Ler e livre; para criar, alterar ou excluir mande uma chave no header X-API-Key";
+    }
+
+    // GET / - apresenta a api e da os links pra documentacao, pras listas e pras tabelas
+    @Operation(summary = "Porta de entrada da API", description = "Apresenta a API (nome, versao e o que ela faz) e retorna "
+            + "os links para a documentacao (docs), os termos de uso, a licenca e todas as colecoes "
             + "(equipes, chefes, pilotos, patrocinadores, resultados, classificacoes e chaves). "
             + "E o ponto de partida do HATEOAS: daqui o cliente chega em tudo seguindo os links")
-    @ApiResponse(responseCode = "200", description = "Links para todas as colecoes")
+    @ApiResponse(responseCode = "200", description = "Apresentacao da API e os links para tudo")
     @GetMapping("/")
-    public RepresentationModel<?> index() {
-        return new RepresentationModel<>()
+    public Home index() {
+        return new Home()
+                .add(linkTo(HomeController.class).slash("swagger-ui.html").withRel("docs"))
+                .add(linkTo(HomeController.class).slash("terms.html").withRel("terms"))
+                .add(linkTo(HomeController.class).slash("license.txt").withRel("license"))
                 .add(linkTo(methodOn(TeamController.class).getAllTeams(Pageable.unpaged())).withRel("teams"))
                 .add(linkTo(methodOn(TeamPrincipalController.class).getAllPrincipals(Pageable.unpaged())).withRel("principals"))
                 .add(linkTo(methodOn(DriverController.class).getAllDrivers(Pageable.unpaged())).withRel("drivers"))

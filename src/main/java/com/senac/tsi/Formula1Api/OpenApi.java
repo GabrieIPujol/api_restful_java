@@ -43,6 +43,9 @@ public class OpenApi {
 
     private static final String API_KEY_SCHEME = "ApiKey";
 
+    // versao da api, aparece no Swagger e no GET / (lembre de atualizar o CHANGELOG e o badge do README junto)
+    static final String VERSION = "2.0.2";
+
     // ordem dos grupos no Swagger: a chave primeiro, depois cada cadastro antes de quem depende dele
     // (patrocinador -> equipe -> chefe e piloto -> resultado). os nomes tem que bater com o @Tag dos controllers
     static final List<String> TAG_ORDER = List.of("Chaves de API", "Inicio", "Patrocinadores", "Equipes",
@@ -55,10 +58,16 @@ public class OpenApi {
         return new OpenAPI()
                 .info(new Info()
                         .title("Formula 1 API")
-                        .version("2.0.2")
+                        .version(VERSION)
                         .description("API RESTful para gerenciar equipes, chefes de equipe, pilotos, patrocinadores " +
                                 "e resultados de corrida da Formula 1, com tabelas de classificacao de pilotos e construtores. " +
                                 "Todas as listagens sao paginadas (`page`, `size`, `sort`).\n\n" +
+                                "**Primeiros passos:**\n\n" +
+                                "1. abra o `GET /` (grupo Inicio): ele lista tudo o que a API tem;\n" +
+                                "2. leia a vontade com GET, sem chave nenhuma;\n" +
+                                "3. para criar, alterar ou excluir, clique em **Authorize** e cole uma chave USER;\n" +
+                                "4. cadastre na ordem dos grupos abaixo (patrocinador, equipe, chefe e piloto, resultado): " +
+                                "cada um usa o id do anterior.\n\n" +
                                 "**HATEOAS (HAL):** cada resposta traz um bloco `_links` com os enderecos do que da para fazer em seguida " +
                                 "(ver, alterar, apagar, ir para os registros relacionados ou para a proxima pagina). " +
                                 "Assim o cliente navega pela API seguindo os links, sem montar URL na mao. " +

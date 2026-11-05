@@ -43,7 +43,7 @@ A API sobe em **http://localhost:8080**.
 | Endereço | O que é |
 |---|---|
 | http://localhost:8080/swagger-ui.html | Documentação interativa (Swagger) |
-| http://localhost:8080/ | Raiz da API, com links para todos os recursos |
+| http://localhost:8080/ | Raiz da API: se apresenta e tem links para a documentação e para todos os recursos |
 | http://localhost:8080/terms.html | Termos de serviço (página pública) |
 | http://localhost:8080/license.txt | Licença MIT (pública) |
 | http://localhost:8080/h2-console | Console do banco, só abre no próprio computador. JDBC URL `jdbc:h2:mem:formula1db`, usuário `sa`, senha vazia |

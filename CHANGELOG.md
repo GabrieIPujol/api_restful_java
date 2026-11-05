@@ -11,6 +11,8 @@ Todas as mudanças da Formula 1 API ficam registradas aqui. As versões seguem o
 - Descrição do Swagger: explica como a API usa o HATEOAS e a idempotência, e mostra os planos numa tabela.
 - Toda a documentação das rotas no Swagger está em português: cada rota explica o processo (como liga os relacionamentos, as regras e o efeito nos outros dados) e cada erro diz o motivo exato. Os grupos também foram traduzidos (Equipes, Pilotos, Pilotos v2...).
 - Cada erro documentado no Swagger mostra um exemplo do JSON que a API devolve (pplication/problem+json), com a mensagem real da rota, e as respostas mostram os headers: limite do plano no sucesso, Location e Idempotent-Replayed no 201, Retry-After no 429 e Deprecation/Sunset na v1 dos pilotos. Os exemplos de sucesso usam valores realistas.
+- O \GET /\ agora se apresenta (nome, versão e uma frase de orientação) e tem links para a documentação (\docs\), os termos e a licença.
+- O Swagger começa com os grupos fechados, como um mapa da API, tem busca, já abre os campos para editar, mostra o tempo de cada requisição e traz um roteiro de primeiros passos no topo.
 - Os grupos do Swagger seguem a ordem de cadastro, com cada recurso antes de quem depende dele: Chaves de API, Inicio, Patrocinadores, Equipes, Chefes de equipe, Pilotos, Pilotos v2 e Resultados.
 
 ## [2.0.1] - 2026-11-03
